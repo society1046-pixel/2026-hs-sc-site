@@ -8,12 +8,11 @@
     const checkRole = sessionStorage.getItem('userRole');
     if (!checkRole || checkRole == 0) {
       alert('비정상적인 접근입니다. 로그인을 먼저 해주세요.');
-      window.location.replace('loginh.html'); // 뒤로 가기 기록도 안 남기고 강제 이동!
+      window.location.replace('loginh.html'); 
     }
   </script>
 
   <style>
-    /* 연하고 부드러운 파스텔톤 공통 디자인 */
     body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
     .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; padding: 0; }
@@ -30,69 +29,188 @@
     .menu-list { padding: 10px 0; }
     .menu-item { padding: 15px 25px; display: block; color: #7BA4DB; font-weight: bold; text-decoration: none; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; }
     .menu-item:hover { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; }
-    
     .logout-btn { margin: 20px; padding: 10px 20px; background-color: #F19C99; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); transition: 0.2s; }
-    .logout-btn:hover { background-color: #E6827F; }
-
+    
     .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
     .banner-img-container { width: 100%; border-radius: 15px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); background-color: #EAF0F6; }
     .banner-img-container img { width: 100%; display: block; height: auto; object-fit: cover; max-height: 250px; }
 
-    .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; }
-    .card-title { margin-top: 0; color: #4A5568; font-size: 18px; border-bottom: 2px solid #F4F7FB; padding-bottom: 12px; margin-bottom: 20px; }
-    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+    .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; position: relative; }
     
+    /* 달력 헤더 (버튼 포함) */
+    .calendar-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #F4F7FB; padding-bottom: 12px; margin-bottom: 20px; }
+    .calendar-header-box h3 { margin: 0; color: #4A5568; font-size: 18px; }
+    .month-btn { background: none; border: 1px solid #7BA4DB; color: #7BA4DB; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    .month-btn:hover { background: #7BA4DB; color: white; }
+
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
     .cal-header { font-weight: bold; color: #A0AEC0; padding-bottom: 10px; font-size: 14px; }
-    .cal-day { border-radius: 8px; background-color: #FAFCFF; border: 1px solid #EDF2F7; padding: 10px 5px; min-height: 70px; font-size: 14px; transition: 0.2s; position: relative; display: flex; flex-direction: column; align-items: center; }
-    .cal-day:hover:not(.empty) { background-color: #EDF2F7; cursor: pointer; }
+    .cal-day { border-radius: 8px; background-color: #FAFCFF; border: 1px solid #EDF2F7; padding: 10px 5px; min-height: 70px; font-size: 14px; transition: 0.2s; position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer;}
+    .cal-day:hover:not(.empty) { background-color: #EDF2F7; }
     .empty { background-color: transparent; border: none; cursor: default; }
     .today { background-color: #7BA4DB; color: white; font-weight: bold; border: none; box-shadow: 0 2px 8px rgba(123, 164, 219, 0.4); }
     .today .event-dot { background-color: white; }
 
     .event-dot { width: 6px; height: 6px; background-color: #F19C99; border-radius: 50%; margin-top: 5px; }
     .event-text { font-size: 10px; color: #718096; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+
+    /* ★ 추가: 모달 창 (일정 추가/삭제 팝업) 디자인 */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; }
+    .modal-card { background: white; padding: 25px; border-radius: 12px; width: 320px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .modal-card h3 { margin-top: 0; color: #4A5568; }
+    .event-list-item { background: #F4F7FB; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+    .del-btn { background: #F19C99; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; }
+    textarea { width: 100%; padding: 10px; border: 1px solid #DCE4EC; border-radius: 8px; box-sizing: border-box; font-family: inherit; resize: none; margin-bottom: 15px; }
+    .modal-btns { display: flex; gap: 10px; }
+    .modal-btns button { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .save-btn { background: #7BA4DB; color: white; }
+    .cancel-btn { background: #EAF0F6; color: #4A5568; }
   </style>
   <script>
-    // ★ 여기에 loginh.html과 똑같은 구글 웹 앱 URL을 붙여넣으세요! ★
+    // 알려주신 API 주소를 적용했습니다!
     const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
 
     let currentRole = 0;
     let savedEvents = {}; 
+    
+    // 달력 날짜 넘기기용 변수
+    let displayYear = new Date().getFullYear();
+    let displayMonth = new Date().getMonth(); // 0 = 1월
 
     function initMain() {
       currentRole = sessionStorage.getItem('userRole');
-      const userId = sessionStorage.getItem('userId');
-      const userName = sessionStorage.getItem('userName');
-      
-      let displayName = userName ? ` (${userName})` : "";
-      document.getElementById('display-id').innerText = userId + displayName;
+      document.getElementById('display-id').innerText = sessionStorage.getItem('userId') + (sessionStorage.getItem('userName') ? ` (${sessionStorage.getItem('userName')})` : "");
       
       let roleDisplay = document.getElementById('display-role');
-      if (currentRole == 1) {
-        roleDisplay.innerText = "일반학생";
-        roleDisplay.style.backgroundColor = "#82CA9D"; 
-      } else if (currentRole == 2) {
-        roleDisplay.innerText = "학생회 (관리자)";
-        roleDisplay.style.backgroundColor = "#F19C99"; 
+      if (currentRole == 1) { roleDisplay.innerText = "일반학생"; roleDisplay.style.backgroundColor = "#82CA9D"; } 
+      else if (currentRole == 2) { roleDisplay.innerText = "학생회 (관리자)"; roleDisplay.style.backgroundColor = "#F19C99"; }
+
+      // ★ 속도 최적화: 로컬 스토리지에서 먼저 꺼내서 0.01초 만에 렌더링!
+      const cachedData = localStorage.getItem('cachedCalendar');
+      if (cachedData) {
+        savedEvents = JSON.parse(cachedData);
+        renderCalendar();
       }
 
-      // 서버(구글 시트)에서 달력 일정 불러오기 (리다이렉트 에러 방지 적용)
-      document.getElementById('calendar-month-title').innerText = "📅 달력 일정을 불러오는 중...";
+      // 화면을 띄워놓고 백그라운드에서 구글에 최신 데이터 물어보기
       fetch(`${API_URL}?action=getCalendar`, { redirect: 'follow' })
-        .then(res => res.text()) // 먼저 텍스트로 받아옵니다.
+        .then(res => res.text())
         .then(text => {
           try {
-            const data = JSON.parse(text); // JSON 변환 시도
-            savedEvents = data;
+            savedEvents = JSON.parse(text); 
+            localStorage.setItem('cachedCalendar', JSON.stringify(savedEvents)); // 새 정보 캐싱
+            renderCalendar(); // 몰래 화면 업데이트
+          } catch (e) { console.error("데이터 로딩 오류"); }
+        });
+    }
+
+    function changeMonth(direction) {
+      displayMonth += direction;
+      if (displayMonth < 0) { displayMonth = 11; displayYear--; }
+      else if (displayMonth > 11) { displayMonth = 0; displayYear++; }
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const today = new Date();
+      document.getElementById('calendar-month-title').innerText = `📅 ${displayYear}년 ${displayMonth + 1}월`;
+
+      const firstDay = new Date(displayYear, displayMonth, 1).getDay(); 
+      const lastDate = new Date(displayYear, displayMonth + 1, 0).getDate(); 
+      const daysGrid = document.getElementById('calendar-days');
+      daysGrid.innerHTML = ''; 
+
+      for (let i = 0; i < firstDay; i++) {
+        daysGrid.innerHTML += `<div class="cal-day empty"></div>`;
+      }
+
+      for (let i = 1; i <= lastDate; i++) {
+        let isTodayClass = (displayYear === today.getFullYear() && displayMonth === today.getMonth() && i === today.getDate()) ? "today" : ""; 
+        let dateString = `${displayYear}-${displayMonth + 1}-${i}`;
+        
+        let eventHtml = '';
+        if (savedEvents[dateString]) {
+          eventHtml = `<div class="event-dot"></div><div class="event-text">${savedEvents[dateString][0]}</div>`;
+        }
+
+        daysGrid.innerHTML += `
+          <div class="cal-day ${isTodayClass}" onclick="dayClicked(${displayYear}, ${displayMonth + 1}, ${i})">
+            ${i}
+            ${eventHtml}
+          </div>`;
+      }
+    }
+
+    // 모달(팝업) 관련 기능
+    let selectedDateStr = "";
+
+    function dayClicked(year, month, day) {
+      selectedDateStr = `${year}-${month}-${day}`;
+      
+      // 일반 학생(권한 1)은 일정 보기만 가능
+      if (currentRole != 2) {
+        if(savedEvents[selectedDateStr] && savedEvents[selectedDateStr].length > 0) {
+            alert(`[ ${month}월 ${day}일 일정 ]\n\n` + savedEvents[selectedDateStr].join('\n\n'));
+        }
+        return; 
+      }
+
+      // 학생회(권한 2)는 모달 팝업 띄우기
+      document.getElementById('modal-title').innerText = `${month}월 ${day}일 일정 관리`;
+      
+      let existingHtml = '';
+      if(savedEvents[selectedDateStr]) {
+        savedEvents[selectedDateStr].forEach(ev => {
+          let safeText = ev.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          existingHtml += `
+            <div class="event-list-item">
+              <span style="flex-grow:1; margin-right:10px;">${ev.replace(/\n/g, '<br>')}</span>
+              <button class="del-btn" onclick="deleteEvent('${safeText}')">삭제</button>
+            </div>`;
+        });
+      }
+      document.getElementById('existing-events-box').innerHTML = existingHtml;
+      document.getElementById('newEventText').value = ""; // 입력창 초기화
+      document.getElementById('eventModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('eventModal').style.display = 'none';
+    }
+
+    // 일정 추가 (4줄 텍스트)
+    function saveEvent() {
+      let eventText = document.getElementById('newEventText').value;
+      if (!eventText.trim()) { alert('내용을 입력하세요.'); return; }
+      
+      document.getElementById('modal-title').innerText = "저장 중... ⏳";
+      
+      fetch(`${API_URL}?action=addEvent&date=${selectedDateStr}&text=${encodeURIComponent(eventText)}`, { redirect: 'follow' })
+        .then(res => res.json())
+        .then(data => {
+          if(data.success) {
+            savedEvents = data.events; // 서버에서 온 최신 데이터로 업데이트
+            localStorage.setItem('cachedCalendar', JSON.stringify(savedEvents));
             renderCalendar(); 
-          } catch (e) {
-            console.error("JSON 파싱 에러 (서버 응답 오류):", text);
-            document.getElementById('calendar-month-title').innerText = "📅 달력 로딩 실패 (F12 콘솔 확인)";
+            closeModal();
           }
-        })
-        .catch(err => {
-          console.error("네트워크 에러:", err);
-          document.getElementById('calendar-month-title').innerText = "📅 달력 로딩 실패 (네트워크 오류)";
+        });
+    }
+
+    // 일정 삭제
+    function deleteEvent(eventText) {
+      if(!confirm('이 일정을 삭제하시겠습니까?')) return;
+      document.getElementById('modal-title').innerText = "삭제 중... 🗑️";
+      
+      fetch(`${API_URL}?action=deleteEvent&date=${selectedDateStr}&text=${encodeURIComponent(eventText)}`, { redirect: 'follow' })
+        .then(res => res.json())
+        .then(data => {
+          if(data.success) {
+            savedEvents = data.events;
+            localStorage.setItem('cachedCalendar', JSON.stringify(savedEvents));
+            renderCalendar();
+            closeModal();
+          }
         });
     }
 
@@ -104,84 +222,10 @@
     function logout() {
       if(confirm('로그아웃 하시겠습니까?')) {
         sessionStorage.clear(); 
-        window.location.replace('loginh.html'); // 로그아웃 시에도 뒤로 가기 방지!
+        window.location.replace('loginh.html'); 
       }
     }
-
-    function goToPage(pageName) {
-      window.location.href = pageName + '.html'; 
-    }
-
-    function renderCalendar() {
-      const date = new Date();
-      const year = date.getFullYear();
-      const month = date.getMonth(); 
-      const today = date.getDate();
-
-      document.getElementById('calendar-month-title').innerText = `📅 ${year}년 ${month + 1}월 학사 일정`;
-
-      const firstDay = new Date(year, month, 1).getDay(); 
-      const lastDate = new Date(year, month + 1, 0).getDate(); 
-
-      const daysGrid = document.getElementById('calendar-days');
-      daysGrid.innerHTML = ''; 
-
-      for (let i = 0; i < firstDay; i++) {
-        daysGrid.innerHTML += `<div class="cal-day empty"></div>`;
-      }
-
-      for (let i = 1; i <= lastDate; i++) {
-        let isTodayClass = (i === today) ? "today" : ""; 
-        let dateString = `${year}-${month + 1}-${i}`;
-        
-        let eventHtml = '';
-        if (savedEvents[dateString]) {
-          eventHtml = `<div class="event-dot"></div><div class="event-text">${savedEvents[dateString][0]}</div>`;
-        }
-
-        daysGrid.innerHTML += `
-          <div class="cal-day ${isTodayClass}" onclick="dayClicked(${year}, ${month + 1}, ${i})">
-            ${i}
-            ${eventHtml}
-          </div>`;
-      }
-    }
-
-    function dayClicked(year, month, day) {
-      let dateString = `${year}-${month}-${day}`;
-      
-      if (currentRole != 2) {
-        if(savedEvents[dateString]) {
-            alert(`${month}월 ${day}일 일정: \n${savedEvents[dateString].join('\n')}`);
-        }
-        return; 
-      }
-
-      let eventText = prompt(`${month}월 ${day}일에 추가할 일정을 입력하세요.\n(취소하려면 빈칸으로 두세요)`);
-      
-      if (eventText && eventText.trim() !== "") {
-        document.getElementById('calendar-month-title').innerText = "저장 중...";
-        
-        // 일정 저장 시에도 에러 방지 코드 적용
-        fetch(`${API_URL}?action=addEvent&date=${dateString}&text=${encodeURIComponent(eventText)}`, { redirect: 'follow' })
-          .then(res => res.text())
-          .then(text => {
-            try {
-              const data = JSON.parse(text);
-              if(data.success) {
-                alert('일정이 저장되었습니다!');
-                if(!savedEvents[dateString]) savedEvents[dateString] = [];
-                savedEvents[dateString].push(eventText);
-                renderCalendar(); 
-              }
-            } catch(e) {
-              alert('저장 중 오류가 발생했습니다. (F12 콘솔 확인)');
-              console.error("저장 에러:", text);
-              renderCalendar(); // 원래 상태로 복구
-            }
-          });
-      }
-    }
+    function goToPage(pageName) { window.location.href = pageName + '.html'; }
   </script>
 </head>
 <body>
@@ -201,11 +245,7 @@
       <h3 class="user-id-text" id="display-id">ID 로딩중...</h3>
       <span class="user-role-badge" id="display-role">권한 로딩중...</span>
     </div>
-    
-    <div class="menu-list">
-      <div class="menu-item" onclick="goToPage('fage1')">📂 Fage1 메뉴로 이동</div>
-    </div>
-    
+    <div class="menu-list"><div class="menu-item" onclick="goToPage('fage1')">📂 Fage1 메뉴로 이동</div></div>
     <button class="logout-btn" onclick="logout()">로그아웃</button>
   </div>
 
@@ -215,19 +255,38 @@
     </div>
 
     <div class="card">
-      <h3 class="card-title" id="calendar-month-title">📅 이달의 학사 일정</h3>
+      <div class="calendar-header-box">
+        <button class="month-btn" onclick="changeMonth(-1)">◀ 이전</button>
+        <h3 id="calendar-month-title">📅 이달의 학사 일정</h3>
+        <button class="month-btn" onclick="changeMonth(1)">다음 ▶</button>
+      </div>
+      
       <div class="calendar-grid">
         <div class="cal-header" style="color:#F19C99;">일</div><div class="cal-header">월</div>
         <div class="cal-header">화</div><div class="cal-header">수</div><div class="cal-header">목</div>
         <div class="cal-header">금</div><div class="cal-header" style="color:#7BA4DB;">토</div>
       </div>
       <div class="calendar-grid" id="calendar-days"></div>
-      <p style="text-align: right; font-size: 12px; color: #A0AEC0; margin-top: 15px; margin-bottom: 0;">※ 날짜를 클릭하면 상세 일정을 볼 수 있습니다.</p>
+      <p style="text-align: right; font-size: 12px; color: #A0AEC0; margin-top: 15px; margin-bottom: 0;">※ 관리자는 날짜를 클릭해 추가/삭제할 수 있습니다.</p>
+    </div>
+  </div>
+
+  <div id="eventModal" class="modal-overlay">
+    <div class="modal-card">
+      <h3 id="modal-title">일정 관리</h3>
+      
+      <div id="existing-events-box"></div>
+      
+      <textarea id="newEventText" rows="4" placeholder="새로운 일정을 입력하세요 (최대 4줄)"></textarea>
+      
+      <div class="modal-btns">
+        <button class="save-btn" onclick="saveEvent()">저장</button>
+        <button class="cancel-btn" onclick="closeModal()">닫기</button>
+      </div>
     </div>
   </div>
 
   <script>
-    // 화면이 그려지자마자 달력과 회원 정보를 불러옵니다.
     initMain();
   </script>
 
