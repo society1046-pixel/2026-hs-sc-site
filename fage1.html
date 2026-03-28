@@ -3,6 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <title>Fage 1 상세 메뉴</title>
+  
+  <script>
+    const userRole = sessionStorage.getItem('userRole');
+    if (!userRole || userRole == 0) {
+      alert('비정상적인 접근입니다. 로그인을 먼저 해주세요.');
+      window.location.replace('loginh.html'); // 뒤로 가기 기록도 안 남기고 강제 이동!
+    }
+  </script>
+
   <style>
     body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
     .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
@@ -14,7 +23,6 @@
   </style>
   <script>
     function goBack() {
-      // 깃허브 웹 표준 방식의 페이지 이동
       window.location.href = 'main.html';
     }
   </script>
@@ -31,7 +39,7 @@
       <h2 style="color: #7BA4DB;">Fage 1 페이지에 오신 것을 환영합니다!</h2>
       <p style="color: #9AA5B1; line-height: 1.6;">
         메뉴를 통해 성공적으로 넘어왔습니다.<br>
-        이제 페이지 이동 시 로딩 지연 없이 즉각적으로 화면이 전환됩니다! ⚡
+        보안 검문소를 통과한 정상적인 접속입니다! ⚡
       </p>
       <button class="back-btn" onclick="goBack()">메인 화면으로 돌아가기</button>
     </div>
