@@ -37,7 +37,7 @@
 
     .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; position: relative; }
     
-    /* 달력 헤더 (버튼 포함) */
+    /* 달력 헤더 */
     .calendar-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #F4F7FB; padding-bottom: 12px; margin-bottom: 20px; }
     .calendar-header-box h3 { margin: 0; color: #4A5568; font-size: 18px; }
     .month-btn { background: none; border: 1px solid #7BA4DB; color: #7BA4DB; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
@@ -54,7 +54,7 @@
     .event-dot { width: 6px; height: 6px; background-color: #F19C99; border-radius: 50%; margin-top: 5px; }
     .event-text { font-size: 10px; color: #718096; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
 
-    /* ★ 추가: 모달 창 (일정 추가/삭제 팝업) 디자인 */
+    /* 모달 디자인 */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; }
     .modal-card { background: white; padding: 25px; border-radius: 12px; width: 320px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
     .modal-card h3 { margin-top: 0; color: #4A5568; }
@@ -67,39 +67,77 @@
     .cancel-btn { background: #EAF0F6; color: #4A5568; }
   </style>
   <script>
-    // 알려주신 API 주소를 적용했습니다!
+    // ★ API 주소 
     const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
+
+    // ★ 1. 전체 직책 사전 만들기
+    const roleNames = {
+      1: "재학생",
+      2: "1-1. 반장", 3: "1-1. 부반장", 4: "1-2. 반장", 5: "1-2. 부반장", 
+      6: "1-3. 반장", 7: "1-3. 부반장", 8: "1-4. 반장", 9: "1-4. 부반장", 
+      10: "1-5. 반장", 11: "1-5. 부반장",
+      12: "2-1. 반장", 13: "2-1. 부반장", 14: "2-2. 반장", 15: "2-2. 부반장", 
+      16: "2-3. 반장", 17: "2-3. 부반장", 18: "2-4. 반장", 19: "2-4. 부반장", 
+      20: "2-5. 반장", 21: "2-5. 부반장",
+      22: "3-1. 반장", 23: "3-1. 부반장", 24: "3-2. 반장", 25: "3-2. 부반장", 
+      26: "3-3. 반장", 27: "3-3. 부반장", 28: "3-4. 반장", 29: "3-4. 부반장", 
+      30: "3-5. 반장", 31: "3-5. 부반장",
+      32: "콘텐츠소통부 부장", 33: "콘텐츠소통부",
+      34: "문화소통부 부장", 35: "문화소통부",
+      36: "건강활동부 부장", 37: "건강활동부",
+      38: "학술문예부 부장", 39: "학술문예부",
+      40: "생활안전부 부장", 41: "생활안전부",
+      42: "전교 회장", 43: "전교 부회장", 44: "전교 부회장(2)",
+      45: "선생님", 46: "관리자"
+    };
+
+    // ★ 2. 달력 수정 권한이 있는 사람들의 번호 (원하시면 숫자를 추가/삭제하세요!)
+    const calendarAdmins = [42, 43, 44, 45, 46];
 
     let currentRole = 0;
     let savedEvents = {}; 
-    
-    // 달력 날짜 넘기기용 변수
     let displayYear = new Date().getFullYear();
-    let displayMonth = new Date().getMonth(); // 0 = 1월
+    let displayMonth = new Date().getMonth(); 
 
     function initMain() {
-      currentRole = sessionStorage.getItem('userRole');
+      currentRole = Number(sessionStorage.getItem('userRole'));
       document.getElementById('display-id').innerText = sessionStorage.getItem('userId') + (sessionStorage.getItem('userName') ? ` (${sessionStorage.getItem('userName')})` : "");
       
       let roleDisplay = document.getElementById('display-role');
-      if (currentRole == 1) { roleDisplay.innerText = "일반학생"; roleDisplay.style.backgroundColor = "#82CA9D"; } 
-      else if (currentRole == 2) { roleDisplay.innerText = "학생회 (관리자)"; roleDisplay.style.backgroundColor = "#F19C99"; }
+      
+      // 권한 번호에 따라 이름 매핑 (사전에 없으면 '알 수 없음'으로 표시)
+      roleDisplay.innerText = roleNames[currentRole] || "권한 미상";
 
-      // ★ 속도 최적화: 로컬 스토리지에서 먼저 꺼내서 0.01초 만에 렌더링!
+      // 그룹별 뱃지 색상 지정
+      if (currentRole === 1) { 
+        roleDisplay.style.backgroundColor = "#82CA9D"; // 초록 (재학생)
+      } else if (currentRole >= 2 && currentRole <= 31) {
+        roleDisplay.style.backgroundColor = "#F6AD55"; // 주황 (학급 반장/부반장)
+      } else if (currentRole >= 32 && currentRole <= 41) {
+        roleDisplay.style.backgroundColor = "#B794F4"; // 보라 (부서장 및 부원)
+      } else if (currentRole >= 42 && currentRole <= 44) {
+        roleDisplay.style.backgroundColor = "#F687B3"; // 분홍 (전교 회장단)
+      } else if (currentRole >= 45 && currentRole <= 46) {
+        roleDisplay.style.backgroundColor = "#F19C99"; // 빨강 (선생님/관리자)
+      } else {
+        roleDisplay.style.backgroundColor = "#A0AEC0"; // 회색 (기타)
+      }
+
+      // 속도 최적화: 캐시 불러오기
       const cachedData = localStorage.getItem('cachedCalendar');
       if (cachedData) {
         savedEvents = JSON.parse(cachedData);
         renderCalendar();
       }
 
-      // 화면을 띄워놓고 백그라운드에서 구글에 최신 데이터 물어보기
+      // 서버에서 데이터 불러오기
       fetch(`${API_URL}?action=getCalendar`, { redirect: 'follow' })
         .then(res => res.text())
         .then(text => {
           try {
             savedEvents = JSON.parse(text); 
-            localStorage.setItem('cachedCalendar', JSON.stringify(savedEvents)); // 새 정보 캐싱
-            renderCalendar(); // 몰래 화면 업데이트
+            localStorage.setItem('cachedCalendar', JSON.stringify(savedEvents)); 
+            renderCalendar(); 
           } catch (e) { console.error("데이터 로딩 오류"); }
         });
     }
@@ -141,21 +179,20 @@
       }
     }
 
-    // 모달(팝업) 관련 기능
     let selectedDateStr = "";
 
     function dayClicked(year, month, day) {
       selectedDateStr = `${year}-${month}-${day}`;
       
-      // 일반 학생(권한 1)은 일정 보기만 가능
-      if (currentRole != 2) {
+      // ★ 권한 체크: calendarAdmins 배열에 현재 역할 번호가 없으면 보기만 가능!
+      if (!calendarAdmins.includes(currentRole)) {
         if(savedEvents[selectedDateStr] && savedEvents[selectedDateStr].length > 0) {
             alert(`[ ${month}월 ${day}일 일정 ]\n\n` + savedEvents[selectedDateStr].join('\n\n'));
         }
         return; 
       }
 
-      // 학생회(권한 2)는 모달 팝업 띄우기
+      // 달력 수정 권한이 있는 사람일 경우 모달 띄우기
       document.getElementById('modal-title').innerText = `${month}월 ${day}일 일정 관리`;
       
       let existingHtml = '';
@@ -170,7 +207,7 @@
         });
       }
       document.getElementById('existing-events-box').innerHTML = existingHtml;
-      document.getElementById('newEventText').value = ""; // 입력창 초기화
+      document.getElementById('newEventText').value = ""; 
       document.getElementById('eventModal').style.display = 'flex';
     }
 
@@ -178,7 +215,6 @@
       document.getElementById('eventModal').style.display = 'none';
     }
 
-    // 일정 추가 (4줄 텍스트)
     function saveEvent() {
       let eventText = document.getElementById('newEventText').value;
       if (!eventText.trim()) { alert('내용을 입력하세요.'); return; }
@@ -189,7 +225,7 @@
         .then(res => res.json())
         .then(data => {
           if(data.success) {
-            savedEvents = data.events; // 서버에서 온 최신 데이터로 업데이트
+            savedEvents = data.events; 
             localStorage.setItem('cachedCalendar', JSON.stringify(savedEvents));
             renderCalendar(); 
             closeModal();
@@ -197,7 +233,6 @@
         });
     }
 
-    // 일정 삭제
     function deleteEvent(eventText) {
       if(!confirm('이 일정을 삭제하시겠습니까?')) return;
       document.getElementById('modal-title').innerText = "삭제 중... 🗑️";
@@ -267,18 +302,15 @@
         <div class="cal-header">금</div><div class="cal-header" style="color:#7BA4DB;">토</div>
       </div>
       <div class="calendar-grid" id="calendar-days"></div>
-      <p style="text-align: right; font-size: 12px; color: #A0AEC0; margin-top: 15px; margin-bottom: 0;">※ 관리자는 날짜를 클릭해 추가/삭제할 수 있습니다.</p>
+      <p style="text-align: right; font-size: 12px; color: #A0AEC0; margin-top: 15px; margin-bottom: 0;">※ 선생님, 관리자, 전교회장단은 날짜를 클릭해 일정을 관리할 수 있습니다.</p>
     </div>
   </div>
 
   <div id="eventModal" class="modal-overlay">
     <div class="modal-card">
       <h3 id="modal-title">일정 관리</h3>
-      
       <div id="existing-events-box"></div>
-      
       <textarea id="newEventText" rows="4" placeholder="새로운 일정을 입력하세요 (최대 4줄)"></textarea>
-      
       <div class="modal-btns">
         <button class="save-btn" onclick="saveEvent()">저장</button>
         <button class="cancel-btn" onclick="closeModal()">닫기</button>
