@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>학교 포털 로그인</title>
+  <style>
+    /* 오리지널 깔끔한 블루톤 디자인 */
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #f5f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .login-card { background: white; padding: 40px 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; width: 320px; }
+    .login-card h2 { color: #4A90E2; margin-top: 0; margin-bottom: 5px; font-size: 24px; }
+    .login-card p { color: #888; font-size: 14px; margin-bottom: 25px; }
+    input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; transition: 0.2s; }
+    input:focus { border-color: #4A90E2; box-shadow: 0 0 5px rgba(74, 144, 226, 0.3); }
+    button { width: 100%; padding: 14px; background-color: #4A90E2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
+    button:hover { background-color: #357ABD; }
+    #loading-msg { display: none; color: #4A90E2; font-size: 14px; margin-top: 15px; font-weight: bold; }
+  </style>
+  <script>
+    sessionStorage.setItem('userRole', 0);
+
+    // ★ 여기에 아까 복사한 구글 웹 앱 URL을 붙여넣으세요! ★
+    const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
+
+    function attemptLogin() {
+      const userId = document.getElementById('userId').value;
+      if (!userId) { alert('아이디를 입력해주세요.'); return; }
+
+      document.getElementById('loading-msg').style.display = 'block';
+
+      // google.script.run 대신 표준 fetch API 사용!
+      fetch(`${API_URL}?action=login&id=${userId}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            sessionStorage.setItem('userRole', data.role);
+            sessionStorage.setItem('userId', data.id); 
+            sessionStorage.setItem('userName', data.name);
+            
+            // 로그인 성공 시 main.html 파일로 이동
+            window.location.href = 'main.html';
+          } else {
+            document.getElementById('loading-msg').style.display = 'none';
+            alert('일치하는 아이디가 없습니다.');
+          }
+        })
+        .catch(error => {
+          document.getElementById('loading-msg').style.display = 'none';
+          alert('서버 오류가 발생했습니다: ' + error.message);
+        });
+    }
+  </script>
+</head>
+<body>
+  <div class="login-card">
+    <h2>학교 포털 로그인</h2>
+    <p>부여받은 학번(아이디)을 입력하세요.</p>
+    
+    <input type="text" id="userId" placeholder="아이디를 입력하세요">
+    <button onclick="attemptLogin()">로그인</button>
+    
+    <div id="loading-msg">인증 정보를 확인 중입니다...</div>
+  </div>
+</body>
+</html>
