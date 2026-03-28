@@ -3,6 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <title>학교 포털 시스템 - 메인</title>
+
+  <script>
+    const checkRole = sessionStorage.getItem('userRole');
+    if (!checkRole || checkRole == 0) {
+      alert('비정상적인 접근입니다. 로그인을 먼저 해주세요.');
+      window.location.replace('loginh.html'); // 뒤로 가기 기록도 안 남기고 강제 이동!
+    }
+  </script>
+
   <style>
     /* 연하고 부드러운 파스텔톤 공통 디자인 */
     body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
@@ -55,12 +64,6 @@
       const userId = sessionStorage.getItem('userId');
       const userName = sessionStorage.getItem('userName');
       
-      if (!currentRole || currentRole == 0) {
-        alert('로그인이 필요합니다.');
-        window.location.href = 'loginh.html'; 
-        return;
-      }
-
       let displayName = userName ? ` (${userName})` : "";
       document.getElementById('display-id').innerText = userId + displayName;
       
@@ -101,7 +104,7 @@
     function logout() {
       if(confirm('로그아웃 하시겠습니까?')) {
         sessionStorage.clear(); 
-        window.location.href = 'loginh.html'; 
+        window.location.replace('loginh.html'); // 로그아웃 시에도 뒤로 가기 방지!
       }
     }
 
