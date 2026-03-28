@@ -44,8 +44,8 @@
     .event-text { font-size: 10px; color: #718096; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
   </style>
   <script>
-    // ★ 여기에 아까 복사한 구글 웹 앱 URL을 붙여넣으세요! ★
-    const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
+    // ★ 여기에 loginh.html과 똑같은 구글 웹 앱 URL을 붙여넣으세요! ★
+    const API_URL = "YOUR_API_URL_HERE"; 
 
     let currentRole = 0;
     let savedEvents = {}; 
@@ -57,7 +57,6 @@
       
       if (!currentRole || currentRole == 0) {
         alert('로그인이 필요합니다.');
-        // 만약 로그인이 안 되어 있다면 사용자가 만든 loginh.html로 돌려보냅니다.
         window.location.href = 'loginh.html'; 
         return;
       }
@@ -74,17 +73,23 @@
         roleDisplay.style.backgroundColor = "#F19C99"; 
       }
 
-      // 서버(구글 시트)에서 달력 일정 불러오기 (fetch 사용)
+      // 서버(구글 시트)에서 달력 일정 불러오기 (리다이렉트 에러 방지 적용)
       document.getElementById('calendar-month-title').innerText = "📅 달력 일정을 불러오는 중...";
-      fetch(`${API_URL}?action=getCalendar`)
-        .then(res => res.json())
-        .then(data => {
-          savedEvents = data;
-          renderCalendar(); 
+      fetch(`${API_URL}?action=getCalendar`, { redirect: 'follow' })
+        .then(res => res.text()) // 먼저 텍스트로 받아옵니다.
+        .then(text => {
+          try {
+            const data = JSON.parse(text); // JSON 변환 시도
+            savedEvents = data;
+            renderCalendar(); 
+          } catch (e) {
+            console.error("JSON 파싱 에러 (서버 응답 오류):", text);
+            document.getElementById('calendar-month-title').innerText = "📅 달력 로딩 실패 (F12 콘솔 확인)";
+          }
         })
         .catch(err => {
-          console.error(err);
-          document.getElementById('calendar-month-title').innerText = "📅 달력 로딩 실패";
+          console.error("네트워크 에러:", err);
+          document.getElementById('calendar-month-title').innerText = "📅 달력 로딩 실패 (네트워크 오류)";
         });
     }
 
@@ -96,12 +101,12 @@
     function logout() {
       if(confirm('로그아웃 하시겠습니까?')) {
         sessionStorage.clear(); 
-        window.location.href = 'loginh.html'; // 만든 파일명으로 이동!
+        window.location.href = 'loginh.html'; 
       }
     }
 
     function goToPage(pageName) {
-      window.location.href = pageName + '.html'; // 웹 표준 이동 방식
+      window.location.href = pageName + '.html'; 
     }
 
     function renderCalendar() {
@@ -154,15 +159,22 @@
       if (eventText && eventText.trim() !== "") {
         document.getElementById('calendar-month-title').innerText = "저장 중...";
         
-        // 서버(구글 시트)에 달력 일정 저장하기 (fetch 사용)
-        fetch(`${API_URL}?action=addEvent&date=${dateString}&text=${encodeURIComponent(eventText)}`)
-          .then(res => res.json())
-          .then(data => {
-            if(data.success) {
-              alert('일정이 저장되었습니다!');
-              if(!savedEvents[dateString]) savedEvents[dateString] = [];
-              savedEvents[dateString].push(eventText);
-              renderCalendar(); 
+        // 일정 저장 시에도 에러 방지 코드 적용
+        fetch(`${API_URL}?action=addEvent&date=${dateString}&text=${encodeURIComponent(eventText)}`, { redirect: 'follow' })
+          .then(res => res.text())
+          .then(text => {
+            try {
+              const data = JSON.parse(text);
+              if(data.success) {
+                alert('일정이 저장되었습니다!');
+                if(!savedEvents[dateString]) savedEvents[dateString] = [];
+                savedEvents[dateString].push(eventText);
+                renderCalendar(); 
+              }
+            } catch(e) {
+              alert('저장 중 오류가 발생했습니다. (F12 콘솔 확인)');
+              console.error("저장 에러:", text);
+              renderCalendar(); // 원래 상태로 복구
             }
           });
       }
@@ -200,4 +212,21 @@
     </div>
 
     <div class="card">
-      <h3 class="card-title" id="calendar-month-title">📅 이달의 학
+      <h3 class="card-title" id="calendar-month-title">📅 이달의 학사 일정</h3>
+      <div class="calendar-grid">
+        <div class="cal-header" style="color:#F19C99;">일</div><div class="cal-header">월</div>
+        <div class="cal-header">화</div><div class="cal-header">수</div><div class="cal-header">목</div>
+        <div class="cal-header">금</div><div class="cal-header" style="color:#7BA4DB;">토</div>
+      </div>
+      <div class="calendar-grid" id="calendar-days"></div>
+      <p style="text-align: right; font-size: 12px; color: #A0AEC0; margin-top: 15px; margin-bottom: 0;">※ 날짜를 클릭하면 상세 일정을 볼 수 있습니다.</p>
+    </div>
+  </div>
+
+  <script>
+    // 화면이 그려지자마자 달력과 회원 정보를 불러옵니다.
+    initMain();
+  </script>
+
+</body>
+</html>
