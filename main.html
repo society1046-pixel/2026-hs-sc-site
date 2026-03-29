@@ -134,7 +134,10 @@
         else if (currentRole >= 45 && currentRole <= 46) roleDisplay.style.backgroundColor = "#F19C99"; 
 
         // 정상적인 메뉴 보여주기
-        menuContainer.innerHTML = `<div class="menu-item" onclick="goToPage('fage1')">📂 Fage1 메뉴로 이동</div>`;
+        menuContainer.innerHTML = `
+          <div class="menu-item" onclick="goToPage('page2')">📢 학생회 소개</div>
+          <div class="menu-item" onclick="goToPage('fage1')">📂 Fage1 메뉴로 이동</div>
+        `;
         
         // 하단 버튼을 '로그아웃'으로 변경
         actionBtn.innerText = "로그아웃";
