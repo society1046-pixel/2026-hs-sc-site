@@ -72,8 +72,8 @@
         roleDisplay.innerText = "비회원";
         roleDisplay.style.backgroundColor = "#A0AEC0";
         menuContainer.innerHTML = `
-          <div class="menu-item" onclick="goToPage('main')">🏠 메인 화면</div>
-          <div class="menu-item" onclick="goToPage('scint')" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">📢 학생회 조직도</div>
+          <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+          <div class="menu-item" onclick="goToPage('scint')" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">학생회 조직도</div>
         `;
         actionBtn.innerText = "로그인 하러가기";
         actionBtn.style.backgroundColor = "#7BA4DB";
@@ -83,9 +83,9 @@
         roleDisplay.innerText = roleNames[currentRole] || "권한 미상";
         roleDisplay.style.backgroundColor = "#82CA9D"; 
         menuContainer.innerHTML = `
-          <div class="menu-item" onclick="goToPage('main')">🏠 메인 화면</div>
-          <div class="menu-item" onclick="goToPage('scint')" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">📢 학생회 조직도</div>
-          <div class="menu-item" onclick="goToPage('fage1')">📂 Fage1 메뉴로 이동</div>
+          <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+          <div class="menu-item" onclick="goToPage('scint')" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">학생회 조직도</div>
+          <div class="menu-item" onclick="goToPage('fage1')">Fage1 메뉴로 이동</div>
         `;
         actionBtn.innerText = "로그아웃";
         actionBtn.style.backgroundColor = "#F19C99";
