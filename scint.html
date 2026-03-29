@@ -2,10 +2,9 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>형석고등학교 학생회 - 공개 페이지</title>
+  <title>형석고등학교 학생회 - 학생회 조직도</title>
 
   <style>
-    /* 메인 페이지와 동일한 스타일 적용 */
     body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
     .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; padding: 0; }
@@ -26,16 +25,39 @@
     .action-btn { margin: 20px; padding: 12px 20px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); transition: 0.2s; }
     
     .container { max-width: 800px; margin: 40px auto; padding: 0 15px; }
-    .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; line-height: 1.6; }
-    .card h2 { margin-top: 0; color: #2D3748; border-bottom: 2px solid #F4F7FB; padding-bottom: 10px; }
+    .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; text-align: center; }
+    .card h2 { margin-top: 0; color: #2D3748; border-bottom: 2px solid #F4F7FB; padding-bottom: 15px; margin-bottom: 30px; }
+
+    /* 조직도 디자인 */
+    .org-chart { display: flex; flex-direction: column; align-items: center; gap: 40px; }
+    .org-level { display: flex; justify-content: center; gap: 20px; width: 100%; flex-wrap: wrap; position: relative; }
+    
+    .org-level::before { content: ""; position: absolute; top: -20px; width: 2px; height: 20px; background-color: #7BA4DB; display: none; }
+    .level-2::before, .level-3::before { display: block; }
+
+    .org-node { background: #FAFCFF; border: 2px solid #7BA4DB; border-radius: 12px; padding: 15px; width: 130px; box-shadow: 0 4px 6px rgba(0,0,0,0.04); transition: 0.2s; position: relative; }
+    .org-title { font-size: 13px; font-weight: bold; color: #7BA4DB; margin-bottom: 8px; border-bottom: 1px dashed #DCE4EC; padding-bottom: 5px; }
+    .org-name { font-size: 16px; color: #2D3748; font-weight: bold; min-height: 20px; word-break: keep-all; }
+    
+    /* 관리자용 디자인 및 삭제 버튼 */
+    .node-del-btn { display: none; position: absolute; top: 8px; right: 8px; background: #F19C99; color: white; border: none; border-radius: 4px; font-size: 10px; cursor: pointer; padding: 3px 6px; font-weight: bold; }
+    
+    .admin-mode .org-node { cursor: pointer; border-color: #F19C99; }
+    .admin-mode .org-title { color: #F19C99; }
+    .admin-mode .org-node:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(241,156,153,0.3); background-color: white; }
+    .admin-mode .node-del-btn { display: block; } /* 관리자 모드일 때만 삭제버튼 보임 */
+    .admin-mode .node-del-btn:hover { background: #E53E3E; }
+    
+    #admin-notice { display: none; font-size: 13px; color: #F19C99; font-weight: bold; margin-bottom: 20px; }
   </style>
 
   <script>
-    const roleNames = { /* 기존 역할 이름들과 동일 (생략하지 말고 전체 복사하셔도 됩니다) */
-      1: "재학생", 42: "전교 회장", 45: "선생님", 46: "관리자"
-    };
+    // ★ 본인의 API 주소로 변경 확인!
+    const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
 
+    const roleNames = { 1: "재학생", 42: "전교 회장", 45: "선생님", 46: "관리자" };
     let currentRole = 0;
+    const orgAdmins = [45, 46]; // 조직도 수정/삭제 권한
 
     function initPage() {
       currentRole = Number(sessionStorage.getItem('userRole')) || 0; 
@@ -47,35 +69,88 @@
 
       if (currentRole === 0) {
         displayId.innerText = "로그인이 필요합니다.";
-        displayId.style.fontSize = "16px";
         roleDisplay.innerText = "비회원";
         roleDisplay.style.backgroundColor = "#A0AEC0";
-        
-        // ★ 비회원에게 보여줄 메뉴 (메인으로 가기, page2 보기)
         menuContainer.innerHTML = `
           <div class="menu-item" onclick="goToPage('main')">🏠 메인 화면</div>
-          <div class="menu-item" onclick="goToPage('page2')" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">📢 학생회 소개 (현재 페이지)</div>
-          <div style="padding: 20px; text-align: center; color: #A0AEC0; font-size: 13px;">더 많은 기능을 보시려면<br>로그인해 주세요.</div>
+          <div class="menu-item" onclick="goToPage('scint')" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">📢 학생회 조직도</div>
         `;
-        
         actionBtn.innerText = "로그인 하러가기";
         actionBtn.style.backgroundColor = "#7BA4DB";
         actionBtn.onclick = function() { window.location.href = 'loginh.html'; };
       } else {
         displayId.innerText = sessionStorage.getItem('userId');
         roleDisplay.innerText = roleNames[currentRole] || "권한 미상";
-        roleDisplay.style.backgroundColor = "#82CA9D"; // 임시 색상
-
-        // ★ 로그인한 회원에게 보여줄 메뉴
+        roleDisplay.style.backgroundColor = "#82CA9D"; 
         menuContainer.innerHTML = `
           <div class="menu-item" onclick="goToPage('main')">🏠 메인 화면</div>
-          <div class="menu-item" onclick="goToPage('page2')" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">📢 학생회 소개</div>
+          <div class="menu-item" onclick="goToPage('scint')" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">📢 학생회 조직도</div>
           <div class="menu-item" onclick="goToPage('fage1')">📂 Fage1 메뉴로 이동</div>
         `;
-        
         actionBtn.innerText = "로그아웃";
         actionBtn.style.backgroundColor = "#F19C99";
         actionBtn.onclick = logout;
+      }
+
+      // 관리자인 경우
+      if (orgAdmins.includes(currentRole)) {
+        document.getElementById('org-chart-container').classList.add('admin-mode');
+        document.getElementById('admin-notice').style.display = 'block';
+      }
+
+      // 데이터 불러오기
+      fetch(`${API_URL}?action=getScints`, { redirect: 'follow' })
+        .then(res => res.json())
+        .then(data => {
+          const keys = ['president', 'vp1', 'vp2', 'dept1', 'dept2', 'dept3', 'dept4', 'dept5'];
+          keys.forEach(k => {
+            document.getElementById('val-' + k).innerText = data[k] || "공석";
+          });
+        });
+    }
+
+    // 이름 수정 함수
+    function editNode(key, title) {
+      if (!orgAdmins.includes(currentRole)) return; 
+
+      let currentVal = document.getElementById('val-' + key).innerText;
+      if (currentVal === "공석" || currentVal === "로딩중...") currentVal = "";
+      
+      let newVal = prompt(`[${title}] 담당자 이름을 입력하세요.\n(비워두면 '공석'으로 표시됩니다.)`, currentVal);
+      
+      if (newVal !== null) {
+        document.getElementById('val-' + key).innerText = "저장중...";
+        fetch(`${API_URL}?action=updateScint&key=${key}&val=${encodeURIComponent(newVal)}`, { redirect: 'follow' })
+          .then(res => res.json())
+          .then(data => {
+             if(data.success) {
+               document.getElementById('val-' + key).innerText = newVal.trim() !== "" ? newVal : "공석";
+             }
+          });
+      }
+    }
+
+    // ★ 이름 삭제(공석 처리) 함수 추가
+    function deleteNode(key, event) {
+      event.stopPropagation(); // 이 코드가 있어야 클릭 시 수정창(prompt)이 같이 뜨는 것을 막아줍니다!
+      if (!orgAdmins.includes(currentRole)) return;
+      
+      let currentVal = document.getElementById('val-' + key).innerText;
+      if (currentVal === "공석" || currentVal === "로딩중...") {
+        alert("이미 공석인 자리입니다.");
+        return;
+      }
+
+      if (confirm('이 직책의 담당자를 삭제(공석 처리) 하시겠습니까?')) {
+        document.getElementById('val-' + key).innerText = "삭제중...";
+        // 값을 비워서 서버에 전송
+        fetch(`${API_URL}?action=updateScint&key=${key}&val=`, { redirect: 'follow' })
+          .then(res => res.json())
+          .then(data => {
+             if(data.success) {
+               document.getElementById('val-' + key).innerText = "공석";
+             }
+          });
       }
     }
 
@@ -86,11 +161,9 @@
 
     function logout() {
       if(confirm('로그아웃 하시겠습니까?')) {
-        sessionStorage.clear(); 
-        window.location.reload(); 
+        sessionStorage.clear(); window.location.reload(); 
       }
     }
-    
     function goToPage(pageName) { window.location.href = pageName + '.html'; }
   </script>
 </head>
@@ -117,13 +190,61 @@
 
   <div class="container">
     <div class="card">
-      <h2>📢 학생회 소개 (공개 페이지)</h2>
-      <p>환영합니다! 이 페이지는 로그인을 하지 않은 비회원(일반 방문자)도 자유롭게 열람할 수 있는 공간입니다.</p>
-      <p>여기에 학생회 인사말, 부서별 역할, 전체 공지사항 등을 자유롭게 작성하시면 됩니다.</p>
-      <ul>
-        <li>비회원 접근: <strong>가능 ⭕</strong></li>
-        <li>로그인 회원 접근: <strong>가능 ⭕</strong></li>
-      </ul>
+      <h2>📢 형석고등학교 학생회 조직도</h2>
+      <p id="admin-notice">※ 관리자 모드입니다. 박스를 클릭해 수정하거나 삭제 버튼으로 비울 수 있습니다.</p>
+
+      <div class="org-chart" id="org-chart-container">
+        
+        <div class="org-level level-1">
+          <div class="org-node" onclick="editNode('president', '학생회장')">
+            <button class="node-del-btn" onclick="deleteNode('president', event)">삭제</button>
+            <div class="org-title">학생회장</div>
+            <div class="org-name" id="val-president">로딩중...</div>
+          </div>
+        </div>
+
+        <div class="org-level level-2">
+          <div class="org-node" onclick="editNode('vp1', '학생부회장')">
+            <button class="node-del-btn" onclick="deleteNode('vp1', event)">삭제</button>
+            <div class="org-title">학생부회장</div>
+            <div class="org-name" id="val-vp1">로딩중...</div>
+          </div>
+          <div class="org-node" onclick="editNode('vp2', '학생부회장(2)')">
+            <button class="node-del-btn" onclick="deleteNode('vp2', event)">삭제</button>
+            <div class="org-title">학생부회장(2)</div>
+            <div class="org-name" id="val-vp2">로딩중...</div>
+          </div>
+        </div>
+
+        <div class="org-level level-3">
+          <div class="org-node" onclick="editNode('dept1', '콘텐츠소통부')">
+            <button class="node-del-btn" onclick="deleteNode('dept1', event)">삭제</button>
+            <div class="org-title">콘텐츠소통부</div>
+            <div class="org-name" id="val-dept1">로딩중...</div>
+          </div>
+          <div class="org-node" onclick="editNode('dept2', '문화소통부')">
+            <button class="node-del-btn" onclick="deleteNode('dept2', event)">삭제</button>
+            <div class="org-title">문화소통부</div>
+            <div class="org-name" id="val-dept2">로딩중...</div>
+          </div>
+          <div class="org-node" onclick="editNode('dept3', '건강활동부')">
+            <button class="node-del-btn" onclick="deleteNode('dept3', event)">삭제</button>
+            <div class="org-title">건강활동부</div>
+            <div class="org-name" id="val-dept3">로딩중...</div>
+          </div>
+          <div class="org-node" onclick="editNode('dept4', '학술문예부')">
+            <button class="node-del-btn" onclick="deleteNode('dept4', event)">삭제</button>
+            <div class="org-title">학술문예부</div>
+            <div class="org-name" id="val-dept4">로딩중...</div>
+          </div>
+          <div class="org-node" onclick="editNode('dept5', '생활안전부')">
+            <button class="node-del-btn" onclick="deleteNode('dept5', event)">삭제</button>
+            <div class="org-title">생활안전부</div>
+            <div class="org-name" id="val-dept5">로딩중...</div>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
 
