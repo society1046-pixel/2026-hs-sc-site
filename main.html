@@ -111,8 +111,11 @@
         roleDisplay.innerText = "비회원";
         roleDisplay.style.backgroundColor = "#A0AEC0";
         
-        // 메뉴 숨기고 안내문 띄우기
-        menuContainer.innerHTML = `<div style="padding: 30px 20px; text-align: center; color: #A0AEC0; font-size: 14px; line-height: 1.5;">메뉴를 이용하시려면<br>로그인을 해주세요.</div>`;
+        // 메뉴 숨기고 안내문 띄우기 // 비로그인 메뉴 바 설정
+        menuContainer.innerHTML = `
+          <div class="menu-item" onclick="goToPage('page2')"> 학생회 소개</div>
+          <div style="padding: 30px 20px; text-align: center; color: #A0AEC0; font-size: 13px; line-height: 1.5;">게시판 등 더 많은 기능을<br>이용하시려면 로그인해주세요.</div>
+        `;
         
         // 하단 버튼을 '로그인 하러가기'로 변경
         actionBtn.innerText = "로그인 하러가기";
