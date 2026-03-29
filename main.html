@@ -65,6 +65,12 @@
     .modal-btns button { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
     .save-btn { background: #7BA4DB; color: white; }
     .cancel-btn { background: #EAF0F6; color: #4A5568; }
+    
+    /* 드롭다운 하위 메뉴 스타일 */
+    .sub-menu { display: none; background-color: #FAFCFF; padding-left: 15px; border-left: 4px solid transparent; }
+    .sub-menu.show { display: block; }
+    .sub-menu .menu-item { font-size: 14px; padding: 10px 25px; color: #4A5568; }
+    .sub-menu .menu-item:hover { color: #7BA4DB; font-weight: bold; background-color: transparent; }
   </style>
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
@@ -137,6 +143,12 @@
         // 정상적인 메뉴 보여주기
         menuContainer.innerHTML = `
           <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
+          <div class="menu-item" onclick="toggleSubMenu('studentCouncilMenu')">학생회 ▼</div>
+          <div id="studentCouncilMenu" class="sub-menu">
+            <div class="menu-item" onclick="goToPage('A1')">- 카테고리 1</div>
+            <div class="menu-item" onclick="goToPage('A2')">- 카테고리 2</div>
+            <div class="menu-item" onclick="goToPage('A3')">- 카테고리 3</div>
+          </div>
           <div class="menu-item" onclick="goToPage('fage1')">Fage1 메뉴로 이동</div>
         `;
         
@@ -276,6 +288,11 @@
     function toggleMenu() {
       const sidebar = document.getElementById("mySidebar");
       sidebar.style.left = sidebar.style.left === "0px" ? "-280px" : "0px";
+    }
+    
+    function toggleSubMenu(menuId) { //토글메뉴
+      const subMenu = document.getElementById(menuId);
+      subMenu.classList.toggle('show');
     }
 
     function logout() {
