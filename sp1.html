@@ -1,57 +1,93 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>학생회 간부 전용 페이지</title>
-  
-  <style>
-    /* 기본 스타일 (원하시는 대로 수정하세요!) */
-    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 20px; color: #4A5568; }
-    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; }
-    h1 { color: #7BA4DB; }
-    .back-btn { background-color: #7BA4DB; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 20px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>특별 페이지</title>
+    <style>
+        /* 기본 배경 (메인 화면 느낌) */
+        body {
+            margin: 0;
+            background-color: #f4f7f6;
+            font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+        }
 
-  <script>
-    // ★ 1. 페이지 화면이 그려지기 전에 가장 먼저 실행되는 보안 검사
-    function checkAccess() {
-      // 컴퓨터(브라우저)에 임시 저장된 로그인 권한 번호를 불러옵니다. (로그인 안 했으면 0)
-      const currentRole = Number(sessionStorage.getItem('userRole')) || 0;
+        /* 상단 헤더 (메인 화면처럼 보이게 포인트 추가) */
+        header {
+            background-color: #333333;
+            color: #ffffff;
+            padding: 20px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
 
-      // 권한이 32보다 작거나 46보다 크면 쫓아냅니다.
-      if (currentRole < 32 || currentRole > 46) {
-        alert("접근 권한이 없습니다. 학생회 간부(32~46번)만 이용할 수 있는 페이지입니다.");
-        
-        // window.location.href 대신 replace를 쓰면 '뒤로 가기' 버튼으로 다시 들어오는 꼼수도 막을 수 있습니다.
-        window.location.replace('main.html'); 
-      }
-    }
+        /* 중앙 정렬용 컨테이너 */
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: calc(100vh - 65px); /* 헤더 높이 제외하고 중앙 정렬 */
+        }
 
-    // 함수를 즉시 실행합니다.
-    checkAccess();
-  </script>
+        /* 깔끔한 내용 박스 */
+        .content-box {
+            background-color: #ffffff;
+            padding: 80px 140px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+
+        .greeting-text {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #333333;
+            margin: 0;
+            letter-spacing: 5px;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="container">
-    <h1>회장단</h1>
-    <p id="welcome-message">로딩 중...</p>
-    
-    <div style="margin: 40px 0; padding: 20px; background-color: #FAFCFF; border: 1px solid #EAF0F6; border-radius: 8px;">
-      <p>이곳에 sp1 페이지의 특별한 내용들을 채워주세요!</p>
-      <p>일반 학생이나 로그인을 하지 않은 사람은 이 문구를 볼 수 없습니다.</p>
+    <div id="secure-area" style="display: none;">
+        <header>
+            특별 접속 페이지
+        </header>
+
+        <div class="container">
+            <div class="content-box">
+                <p class="greeting-text">안녕</p>
+            </div>
+        </div>
     </div>
 
-    <button class="back-btn" onclick="window.location.href='main.html'">메인으로 돌아가기</button>
-  </div>
+    <script>
+        // 페이지가 열리자마자 바로 실행되는 검사 로직
+        window.onload = function() {
+            // 브라우저 저장소(sessionStorage)에서 입장 번호를 가져옵니다.
+            const userNumberStr = sessionStorage.getItem("loggedInNumber");
 
-  <script>
-    // 화면에 접속자의 이름을 띄워주는 간단한 기능
-    window.onload = function() {
-      const userName = sessionStorage.getItem('userName') || "간부";
-      document.getElementById('welcome-message').innerText = `환영합니다, ${userName}님! 업무를 시작해 보세요.`;
-    };
-  </script>
+            // 1. 만약 저장된 번호가 없다면? (링크만 복사해서 직접 들어온 경우)
+            if (!userNumberStr) {
+                alert("비정상적인 접근입니다. 로그인 화면을 거쳐주세요.");
+                window.location.href = "login.html"; // 로그인 화면이나 메인 화면 주소로 튕겨냄
+                return; // 아래 코드는 실행하지 않음
+            }
+
+            // 2. 번호가 있다면 숫자로 변환해서 32~46번인지 확인
+            const userNumber = parseInt(userNumberStr, 10);
+
+            if (userNumber >= 32 && userNumber <= 46) {
+                // 정상적으로 32~46번 사이면 숨겨둔 화면을 보여줍니다.
+                document.getElementById("secure-area").style.display = "block";
+            } else {
+                // 그 외의 번호인 경우
+                alert("접근 권한이 없습니다. 지정된 번호만 들어올 수 있습니다.");
+                window.location.href = "login.html"; // 메인 화면으로 튕겨냄
+            }
+        };
+    </script>
 
 </body>
 </html>
