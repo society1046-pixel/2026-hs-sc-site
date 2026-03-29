@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>학생회 간부 전용 페이지</title>
+  
+  <style>
+    /* 기본 스타일 (원하시는 대로 수정하세요!) */
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 20px; color: #4A5568; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; }
+    h1 { color: #7BA4DB; }
+    .back-btn { background-color: #7BA4DB; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 20px; }
+  </style>
+
+  <script>
+    // ★ 1. 페이지 화면이 그려지기 전에 가장 먼저 실행되는 보안 검사
+    function checkAccess() {
+      // 컴퓨터(브라우저)에 임시 저장된 로그인 권한 번호를 불러옵니다. (로그인 안 했으면 0)
+      const currentRole = Number(sessionStorage.getItem('userRole')) || 0;
+
+      // 권한이 32보다 작거나 46보다 크면 쫓아냅니다.
+      if (currentRole < 32 || currentRole > 46) {
+        alert("접근 권한이 없습니다. 학생회 간부(32~46번)만 이용할 수 있는 페이지입니다.");
+        
+        // window.location.href 대신 replace를 쓰면 '뒤로 가기' 버튼으로 다시 들어오는 꼼수도 막을 수 있습니다.
+        window.location.replace('main.html'); 
+      }
+    }
+
+    // 함수를 즉시 실행합니다.
+    checkAccess();
+  </script>
+</head>
+<body>
+
+  <div class="container">
+    <h1>회장단</h1>
+    <p id="welcome-message">로딩 중...</p>
+    
+    <div style="margin: 40px 0; padding: 20px; background-color: #FAFCFF; border: 1px solid #EAF0F6; border-radius: 8px;">
+      <p>이곳에 sp1 페이지의 특별한 내용들을 채워주세요!</p>
+      <p>일반 학생이나 로그인을 하지 않은 사람은 이 문구를 볼 수 없습니다.</p>
+    </div>
+
+    <button class="back-btn" onclick="window.location.href='main.html'">메인으로 돌아가기</button>
+  </div>
+
+  <script>
+    // 화면에 접속자의 이름을 띄워주는 간단한 기능
+    window.onload = function() {
+      const userName = sessionStorage.getItem('userName') || "간부";
+      document.getElementById('welcome-message').innerText = `환영합니다, ${userName}님! 업무를 시작해 보세요.`;
+    };
+  </script>
+
+</body>
+</html>
