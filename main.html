@@ -46,7 +46,8 @@
     .today .event-dot { background-color: white; }
 
     .event-dot { width: 6px; height: 6px; background-color: #F19C99; border-radius: 50%; margin-top: 5px; }
-    .event-text { font-size: 10px; color: #718096; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+    /* ★ 수정됨: 줄바꿈이 가능하도록 white-space 속성 변경 */
+    .event-text { font-size: 10px; color: #718096; margin-top: 2px; overflow: hidden; white-space: normal; width: 100%; word-break: keep-all; }
 
     /* 하단 외부 링크 버튼 */
     .footer-links { text-align: center; margin: 30px auto 40px; padding: 0 15px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
@@ -189,7 +190,9 @@
         
         let eventHtml = '';
         if (savedEvents[dateString]) {
-          eventHtml = `<div class="event-dot"></div><div class="event-text">${savedEvents[dateString][0]}</div>`;
+          // ★ 수정됨: 달력 네모 칸 안에서 쉼표(,)를 줄바꿈(<br>)으로 변경
+          let formattedText = savedEvents[dateString][0].replace(/,/g, '<br>');
+          eventHtml = `<div class="event-dot"></div><div class="event-text">${formattedText}</div>`;
         }
 
         daysGrid.innerHTML += `
@@ -208,7 +211,9 @@
       // 권한 체크 (0번 비회원도 보기만 가능하도록 처리됨)
       if (!calendarAdmins.includes(currentRole)) {
         if(savedEvents[selectedDateStr] && savedEvents[selectedDateStr].length > 0) {
-            alert(`[ ${month}월 ${day}일 일정 ]\n\n` + savedEvents[selectedDateStr].join('\n\n'));
+            // ★ 수정됨: 일반 사용자용 알림창에서 쉼표(,)를 줄바꿈(\n)으로 변경
+            let alertEvents = savedEvents[selectedDateStr].map(ev => ev.replace(/,/g, '\n'));
+            alert(`[ ${month}월 ${day}일 일정 ]\n\n` + alertEvents.join('\n\n'));
         }
         return; 
       }
@@ -219,9 +224,11 @@
       if(savedEvents[selectedDateStr]) {
         savedEvents[selectedDateStr].forEach(ev => {
           let safeText = ev.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          // ★ 수정됨: 관리자용 모달창에서 쉼표(,)를 줄바꿈(<br>)으로 변경
+          let displayText = ev.replace(/,/g, '<br>').replace(/\n/g, '<br>');
           existingHtml += `
             <div class="event-list-item">
-              <span style="flex-grow:1; margin-right:10px;">${ev.replace(/\n/g, '<br>')}</span>
+              <span style="flex-grow:1; margin-right:10px;">${displayText}</span>
               <button class="del-btn" onclick="deleteEvent('${safeText}')">삭제</button>
             </div>`;
         });
@@ -335,7 +342,7 @@
     <div class="modal-card">
       <h3 id="modal-title">일정 관리</h3>
       <div id="existing-events-box"></div>
-      <textarea id="newEventText" rows="4" placeholder="새로운 일정을 입력하세요 (최대 4줄)"></textarea>
+      <textarea id="newEventText" rows="4" placeholder="새로운 일정을 입력하세요 (쉼표(,)를 쓰면 줄바꿈 됩니다)"></textarea>
       <div class="modal-btns">
         <button class="save-btn" onclick="saveEvent()">저장</button>
         <button class="cancel-btn" onclick="closeModal()">닫기</button>
