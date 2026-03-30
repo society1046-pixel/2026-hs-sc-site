@@ -72,9 +72,9 @@ function initMain() {
       <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
       <div class="menu-item" onclick="toggleSubMenu('studentCouncilMenu')">2학년부 멘토멘티(이음의 '도약') ▼</div>
       <div id="studentCouncilMenu" class="sub-menu">
-        <div class="menu-item" onclick="goToPage('A2')">- 신청</div>
-        <div class="menu-item" onclick="goToPage('A2')">- 신청 명단</div>
-        <div class="menu-item" onclick="goToPage('A2')">- 신청 명단(선생님용)</div>
+        <div class="menu-item" onclick="goToPage('mettsi')">- 신청</div>
+        <div class="menu-item" onclick="goToPage('mettsita')">- 신청 명단</div>
+        <div class="menu-item" onclick="goToPage('mettsitat')">- 신청 명단(선생님용)</div>
       <div class="menu-item" onclick="toggleSubMenu('studentCouncilMenu')">학생회 ▼</div>
       <div id="studentCouncilMenu" class="sub-menu">
         <div class="menu-item" onclick="checkPinAndGo('sp1')">- 회장단</div>
