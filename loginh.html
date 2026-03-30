@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
   <title>형석고등학교 학생회 사이트</title>
-  <meta name="vieport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     /* 오리지널 깔끔한 블루톤 디자인 */
     body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #f5f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
@@ -16,40 +16,9 @@
     button:hover { background-color: #357ABD; }
     #loading-msg { display: none; color: #4A90E2; font-size: 14px; margin-top: 15px; font-weight: bold; }
   </style>
-  <script>
-    sessionStorage.setItem('userRole', 0);
 
-    // ★ 여기에 아까 복사한 구글 웹 앱 URL을 붙여넣으세요! ★
-    const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
+  <script src="loginh.js"></script>
 
-    function attemptLogin() {
-      const userId = document.getElementById('userId').value;
-      if (!userId) { alert('학번을 입력해주세요.'); return; }
-
-      document.getElementById('loading-msg').style.display = 'block';
-
-      // google.script.run 대신 표준 fetch API 사용!
-      fetch(`${API_URL}?action=login&id=${userId}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            sessionStorage.setItem('userRole', data.role);
-            sessionStorage.setItem('userId', data.id); 
-            sessionStorage.setItem('userName', data.name);
-            
-            // 로그인 성공 시 main.html 파일로 이동
-            window.location.href = 'main.html';
-          } else {
-            document.getElementById('loading-msg').style.display = 'none';
-            alert('일치하는 학번이 없습니다.');
-          }
-        })
-        .catch(error => {
-          document.getElementById('loading-msg').style.display = 'none';
-          alert('서버 오류가 발생했습니다: ' + error.message);
-        });
-    }
-  </script>
 </head>
 <body>
   <div class="login-card">
