@@ -71,19 +71,29 @@
       window.location.href = "main.html";
     }
 
-    function setDateLimits() {
+    // 서버(구글시트)에서 신청 모드(당일/일주일)를 불러와서 달력을 세팅하는 함수
+    function loadServerSettingsAndSetDate() {
+      fetch(`${API_URL}?action=getMettsiAdminData`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                const mode = data.settings.mode || 'week'; // 서버 설정값 (기본값: week)
+                applyDateLimitsByMode(mode);
+            } else {
+                applyDateLimitsByMode('week'); // 통신 성공했지만 데이터가 이상하면 기본값
+            }
+        })
+        .catch(err => {
+            console.error("서버 설정 불러오기 실패:", err);
+            applyDateLimitsByMode('week'); // 통신 실패 시 기본값 적용
+        });
+    }
+
+    // 모드에 따라 실제로 달력(input date) 선택 범위를 제한하는 함수
+    function applyDateLimitsByMode(mode) {
       const dateInput = document.getElementById('applyDate');
-      const today = new Date();
+      const todayDate = new Date();
       
-      const dayOfWeek = today.getDay();
-      const distanceToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-      
-      const monday = new Date(today);
-      monday.setDate(today.getDate() + distanceToMonday);
-
-      const friday = new Date(monday);
-      friday.setDate(monday.getDate() + 4);
-
       const formatDate = (date) => {
         const yyyy = date.getFullYear();
         const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -91,8 +101,25 @@
         return `${yyyy}-${mm}-${dd}`;
       };
 
-      dateInput.min = formatDate(monday);
-      dateInput.max = formatDate(friday);
+      if (mode === 'today') {
+        // [당일 모드] 오늘 날짜만 선택 가능하도록 min, max 둘 다 오늘로 고정
+        const todayStr = formatDate(todayDate);
+        dateInput.min = todayStr;
+        dateInput.max = todayStr;
+      } else {
+        // [일주일 모드] 이번 주 월요일 ~ 금요일 세팅 (주말 접속 시 다음 주로 세팅)
+        const dayOfWeek = todayDate.getDay();
+        let distanceToMonday = (dayOfWeek === 0) ? 1 : (dayOfWeek === 6 ? 2 : 1 - dayOfWeek);
+        
+        const monday = new Date(todayDate);
+        monday.setDate(todayDate.getDate() + distanceToMonday);
+
+        const friday = new Date(monday);
+        friday.setDate(monday.getDate() + 4); 
+
+        dateInput.min = formatDate(monday);
+        dateInput.max = formatDate(friday);
+      }
     }
 
     function initPage() {
@@ -122,7 +149,8 @@
         actionBtn.onclick = logout;
       }
 
-      setDateLimits();
+      // 페이지 로딩 시 서버의 설정(당일/일주일 모드)을 불러오도록 호출 변경
+      loadServerSettingsAndSetDate();
     }
 
     function checkDate(element) {
