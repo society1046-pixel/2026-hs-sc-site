@@ -97,6 +97,25 @@
       loadAdminData();
     }
 
+    function getThisWeekDays() {
+      const today = new Date();
+      const dayOfWeek = today.getDay();
+      const distanceToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + distanceToMonday);
+
+      const days = [];
+      [0, 1, 3, 4].forEach(offset => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + offset);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        days.push(`${yyyy}-${mm}-${dd}`);
+      });
+      return days;
+    }
+
     function loadAdminData() {
       document.getElementById('admin-table-body').innerHTML = "<tr><td colspan='5'>데이터를 불러오는 중입니다...</td></tr>";
 
@@ -106,20 +125,21 @@
             if(data.success) {
                 document.getElementById('startTime').value = data.settings.start;
                 document.getElementById('endTime').value = data.settings.end;
-                renderTable(data.list);
+                renderTable(data.list || []);
             }
         });
     }
 
-    // 학생용과 동일하게 날짜별, 타임별 정렬 로직 적용
     function renderTable(list) {
-        if (!list || list.length === 0) {
-            document.getElementById('admin-table-body').innerHTML = "<tr><td colspan='5'>신청자가 없습니다.</td></tr>";
-            return;
-        }
-
-        // 1. 날짜별/타임별 그룹화
+        const thisWeekTargetDates = getThisWeekDays();
+        
+        // 1. 기본적으로 이번 주 월, 화, 목, 금 뼈대 생성
         const groups = {};
+        thisWeekTargetDates.forEach(date => {
+            groups[date] = { 1: [], 2: [] };
+        });
+
+        // 2. 서버 데이터 분류
         list.forEach(row => {
             const dateStr = row[0];
             const slot = row[1];
@@ -127,7 +147,7 @@
             groups[dateStr][slot].push(row);
         });
 
-        // 2. 날짜 순 정렬
+        // 3. HTML 생성
         const sortedDates = Object.keys(groups).sort((a, b) => new Date(a) - new Date(b));
         const daysKor = ['일', '월', '화', '수', '목', '금', '토'];
         let html = '';
@@ -143,10 +163,13 @@
                         </td>
                      </tr>`;
 
+            let hasData = false;
+
             // 1타임, 2타임 출력
             [1, 2].forEach(slot => {
                 const items = groups[date][slot];
                 if (items && items.length > 0) {
+                    hasData = true;
                     items.forEach(row => {
                         let slotBadge = slot == 1 ? '<span class="badge-slot1">1타임</span>' : '<span class="badge-slot2">2타임</span>';
                         html += `<tr>
@@ -159,6 +182,10 @@
                     });
                 }
             });
+
+            if (!hasData) {
+                html += `<tr><td colspan="5" style="color: #A0AEC0; font-size: 13px;">신청 내역이 없습니다.</td></tr>`;
+            }
         });
 
         document.getElementById('admin-table-body').innerHTML = html;
