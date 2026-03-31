@@ -51,6 +51,10 @@
     .btn-secondary { background-color: #A0AEC0; display: block; width: 100%; text-align: center; text-decoration: none; padding: 14px; box-sizing: border-box; margin-top: 10px; }
     .btn-secondary:hover { background-color: #718096; }
 
+    /* 뱃지 디자인 (추가됨) */
+    .badge-slot1 { background-color: #F6AD55; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+    .badge-slot2 { background-color: #82CA9D; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+
     /* 테이블 디자인 */
     .table-responsive { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; white-space: nowrap; }
@@ -60,25 +64,19 @@
   </style>
 
   <script>
-    // ==========================================
-    // API 및 전역 변수 설정
-    // ==========================================
     const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
     
     const roleNames = { 1: "재학생", 42: "전교 회장", 45: "선생님", 46: "관리자" };
     let currentRole = parseInt(sessionStorage.getItem('userRole') || 0);
     const userId = sessionStorage.getItem('userId') || '';
 
-    // 권한 확인 및 초기 설정
     function initPage() {
-      // 선생님(45) & 관리자(46)만 접근 허용
       if (currentRole !== 45 && currentRole !== 46) {
         alert("선생님 및 관리자 전용 페이지입니다.");
         window.location.href = "main.html";
         return;
       }
 
-      // 1. 사이드바 세팅
       const displayId = document.getElementById('display-id');
       const roleDisplay = document.getElementById('display-role');
       const menuContainer = document.getElementById('menu-list-container');
@@ -86,7 +84,7 @@
 
       displayId.innerText = userId;
       roleDisplay.innerText = roleNames[currentRole] || "권한 미상";
-      roleDisplay.style.backgroundColor = currentRole === 46 ? "#E53E3E" : "#82CA9D"; // 관리자는 빨간색 뱃지
+      roleDisplay.style.backgroundColor = currentRole === 46 ? "#E53E3E" : "#82CA9D";
       
       menuContainer.innerHTML = `
         <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
@@ -96,11 +94,9 @@
       actionBtn.style.backgroundColor = "#F19C99";
       actionBtn.onclick = logout;
 
-      // 2. 관리자 데이터(시간, 명단) 불러오기
       loadAdminData();
     }
 
-    // 데이터 불러오기
     function loadAdminData() {
       document.getElementById('admin-table-body').innerHTML = "<tr><td colspan='5'>데이터를 불러오는 중입니다...</td></tr>";
 
@@ -115,28 +111,64 @@
         });
     }
 
-    // 테이블 그리기
+    // 학생용과 동일하게 날짜별, 타임별 정렬 로직 적용
     function renderTable(list) {
-        let html = '';
-        list.forEach((row, index) => {
-            html += `<tr>
-                      <td>${row[0]}</td>
-                      <td>${row[1]}타임</td>
-                      <td>${row[2]} (${row[3]})</td>
-                      <td>${row[4]} (${row[5]})</td>
-                      <td><button class="btn btn-danger" onclick="deleteRecord(${row[6]})">삭제</button></td>
-                    </tr>`;
+        if (!list || list.length === 0) {
+            document.getElementById('admin-table-body').innerHTML = "<tr><td colspan='5'>신청자가 없습니다.</td></tr>";
+            return;
+        }
+
+        // 1. 날짜별/타임별 그룹화
+        const groups = {};
+        list.forEach(row => {
+            const dateStr = row[0];
+            const slot = row[1];
+            if(!groups[dateStr]) groups[dateStr] = { 1: [], 2: [] };
+            groups[dateStr][slot].push(row);
         });
-        document.getElementById('admin-table-body').innerHTML = html || "<tr><td colspan='5'>신청자가 없습니다.</td></tr>";
+
+        // 2. 날짜 순 정렬
+        const sortedDates = Object.keys(groups).sort((a, b) => new Date(a) - new Date(b));
+        const daysKor = ['일', '월', '화', '수', '목', '금', '토'];
+        let html = '';
+
+        sortedDates.forEach(date => {
+            const d = new Date(date);
+            const dayText = isNaN(d) ? '' : ` (${daysKor[d.getDay()]})`;
+
+            // 날짜 헤더 줄
+            html += `<tr style="background-color: #EAF0F6; border-top: 2px solid #CBD5E0;">
+                        <td colspan="5" style="text-align: center; font-weight: bold; color: #2D3748; padding: 12px; font-size: 15px;">
+                            📅 ${date}${dayText}
+                        </td>
+                     </tr>`;
+
+            // 1타임, 2타임 출력
+            [1, 2].forEach(slot => {
+                const items = groups[date][slot];
+                if (items && items.length > 0) {
+                    items.forEach(row => {
+                        let slotBadge = slot == 1 ? '<span class="badge-slot1">1타임</span>' : '<span class="badge-slot2">2타임</span>';
+                        html += `<tr>
+                                  <td>${row[0]}</td>
+                                  <td>${slotBadge}</td>
+                                  <td>${row[2]} (${row[3]})</td>
+                                  <td>${row[4]} (${row[5]})</td>
+                                  <td><button class="btn btn-danger" onclick="deleteRecord(${row[6]})">삭제</button></td>
+                                </tr>`;
+                    });
+                }
+            });
+        });
+
+        document.getElementById('admin-table-body').innerHTML = html;
     }
 
-    // 시간 설정 저장 (오류 방지 및 에러 추적 강화 버전)
     function saveSettings() {
         const start = document.getElementById('startTime').value;
         const end = document.getElementById('endTime').value;
         const btn = document.getElementById('saveTimeBtn');
         
-        // 1. 빈칸 방지
         if(!start || !end) {
             alert("시작 시간과 마감 시간을 모두 입력해주세요.");
             return;
@@ -144,12 +176,10 @@
 
         btn.innerText = "저장중...";
         
-        // 2. 특수기호 깨짐 방지 (encodeURIComponent) 및 요청자 정보(userId, role) 추가 전송
         const requestUrl = `${API_URL}?action=setMettsiTime&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&userId=${userId}&role=${currentRole}`;
 
         fetch(requestUrl)
             .then(res => {
-                // 서버 응답 자체가 실패했을 때
                 if (!res.ok) throw new Error("네트워크 응답이 정상이 아닙니다.");
                 return res.json();
             })
@@ -169,7 +199,6 @@
             });
     }
 
-    // 관리자 강제 추가
     function adminAdd() {
         const date = document.getElementById('addDate').value;
         const slot = document.getElementById('addSlot').value;
@@ -186,8 +215,7 @@
             .then(data => {
                 if(data.success) {
                     alert("추가되었습니다.");
-                    loadAdminData(); // 성공 시 명단 새로고침
-                    // 입력창 초기화
+                    loadAdminData(); 
                     document.getElementById('addId1').value = '';
                     document.getElementById('addId2').value = '';
                 } else {
@@ -197,7 +225,6 @@
             });
     }
 
-    // 신청 기록 삭제
     function deleteRecord(rowIndex) {
         if(!confirm("정말 이 신청 기록을 삭제하시겠습니까?")) return;
         
@@ -213,7 +240,6 @@
             });
     }
 
-    // 공통 기능
     function toggleMenu() {
       const sidebar = document.getElementById("mySidebar");
       sidebar.style.left = sidebar.style.left === "0px" ? "-280px" : "0px";
