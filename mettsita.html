@@ -55,16 +55,12 @@
   </style>
 
   <script>
-    // ==========================================
-    // 기존 기능 및 API 스크립트 영역 (그대로 유지)
-    // ==========================================
     const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
     
     const roleNames = { 1: "재학생", 42: "전교 회장", 45: "선생님", 46: "관리자" };
     let currentRole = parseInt(sessionStorage.getItem('userRole') || 0);
     const userId = sessionStorage.getItem('userId') || '';
     
-    // 권한 확인 로직
     const is2ndGrade = userId.length === 4 && userId.startsWith('2');
     const isAuthorized = is2ndGrade || (currentRole >= 32 && currentRole <= 46);
     
@@ -73,9 +69,7 @@
       window.location.href = "main.html";
     }
 
-    // 초기 화면 세팅 (사이드바 정보 및 데이터 로드)
     function initPage() {
-      // 1. 사이드바 세팅
       const displayId = document.getElementById('display-id');
       const roleDisplay = document.getElementById('display-role');
       const menuContainer = document.getElementById('menu-list-container');
@@ -102,11 +96,9 @@
         actionBtn.onclick = logout;
       }
 
-      // 2. 신청 데이터 로드
       loadApplications();
     }
 
-    // 데이터 불러오기 로직
     function loadApplications() {
       document.getElementById('table-body').innerHTML = "<tr><td colspan='4'>데이터를 불러오는 중입니다...</td></tr>";
       
@@ -118,22 +110,53 @@
              return;
           }
           
-          let html = '';
+          // 1. 날짜 및 타임별로 데이터 그룹화
+          const groups = {};
           data.list.forEach(row => {
-            // row: [날짜, 타임, 신청자학번, 신청자이름, 파트너학번, 파트너이름]
-            let slotBadge = row[1] == '1' ? '<span class="badge-slot1">1타임</span>' : '<span class="badge-slot2">2타임</span>';
-            html += `<tr>
-                      <td>${row[0]}</td>
-                      <td>${slotBadge}</td>
-                      <td>${row[2]} ${row[3]}</td>
-                      <td>${row[4]} ${row[5]}</td>
-                    </tr>`;
+            const dateStr = row[0];
+            const slot = row[1];
+            if (!groups[dateStr]) groups[dateStr] = { 1: [], 2: [] };
+            groups[dateStr][slot].push(row);
           });
+
+          // 2. 날짜 순으로 정렬
+          const sortedDates = Object.keys(groups).sort((a, b) => new Date(a) - new Date(b));
+          
+          let html = '';
+          const daysKor = ['일', '월', '화', '수', '목', '금', '토'];
+
+          sortedDates.forEach(date => {
+            const d = new Date(date);
+            const dayText = isNaN(d) ? '' : ` (${daysKor[d.getDay()]})`;
+
+            // 날짜별 헤더 (구분선 역할)
+            html += `<tr style="background-color: #EAF0F6; border-top: 2px solid #CBD5E0;">
+                        <td colspan="4" style="text-align: center; font-weight: bold; color: #2D3748; padding: 12px; font-size: 15px;">
+                            📅 ${date}${dayText}
+                        </td>
+                     </tr>`;
+
+            // 1타임, 2타임 순서대로 출력
+            [1, 2].forEach(slot => {
+              const items = groups[date][slot];
+              if (items && items.length > 0) {
+                items.forEach(row => {
+                  let slotBadge = slot == 1 ? '<span class="badge-slot1">1타임</span>' : '<span class="badge-slot2">2타임</span>';
+                  html += `<tr>
+                            <td>${row[0]}</td>
+                            <td>${slotBadge}</td>
+                            <td>${row[2]} ${row[3]}</td>
+                            <td>${row[4]} ${row[5]}</td>
+                           </tr>`;
+                });
+              }
+            });
+          });
+
           document.getElementById('table-body').innerHTML = html;
         });
     }
 
-    // 공통 기능
     function toggleMenu() {
       const sidebar = document.getElementById("mySidebar");
       sidebar.style.left = sidebar.style.left === "0px" ? "-280px" : "0px";
