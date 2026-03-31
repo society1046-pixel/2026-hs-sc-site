@@ -61,7 +61,7 @@
 
   <script>
     // ==========================================
-    // 기존 기능 및 API 스크립트 영역 (그대로 유지)
+    // API 및 전역 변수 설정
     // ==========================================
     const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
     
@@ -119,7 +119,6 @@
     function renderTable(list) {
         let html = '';
         list.forEach((row, index) => {
-            // row: [날짜, 타임, 신청자학번, 신청자이름, 파트너학번, 파트너이름, rowIndex(고유번호)]
             html += `<tr>
                       <td>${row[0]}</td>
                       <td>${row[1]}타임</td>
@@ -131,17 +130,41 @@
         document.getElementById('admin-table-body').innerHTML = html || "<tr><td colspan='5'>신청자가 없습니다.</td></tr>";
     }
 
-    // 시간 설정 저장
+    // 시간 설정 저장 (오류 방지 및 에러 추적 강화 버전)
     function saveSettings() {
         const start = document.getElementById('startTime').value;
         const end = document.getElementById('endTime').value;
         const btn = document.getElementById('saveTimeBtn');
+        
+        // 1. 빈칸 방지
+        if(!start || !end) {
+            alert("시작 시간과 마감 시간을 모두 입력해주세요.");
+            return;
+        }
+
         btn.innerText = "저장중...";
         
-        fetch(`${API_URL}?action=setMettsiTime&start=${start}&end=${end}`)
-            .then(res => res.json())
+        // 2. 특수기호 깨짐 방지 (encodeURIComponent) 및 요청자 정보(userId, role) 추가 전송
+        const requestUrl = `${API_URL}?action=setMettsiTime&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&userId=${userId}&role=${currentRole}`;
+
+        fetch(requestUrl)
+            .then(res => {
+                // 서버 응답 자체가 실패했을 때
+                if (!res.ok) throw new Error("네트워크 응답이 정상이 아닙니다.");
+                return res.json();
+            })
             .then(data => {
-                alert(data.success ? "저장되었습니다." : "오류 발생");
+                if (data.success) {
+                    alert("저장되었습니다.");
+                } else {
+                    alert("오류 발생: " + (data.message || "서버에서 저장을 거절했습니다."));
+                }
+            })
+            .catch(error => {
+                console.error("Fetch 통신 에러:", error);
+                alert("서버 통신 중 에러가 발생했습니다. (구글 앱스 스크립트 쪽 코드를 확인해 주세요.)");
+            })
+            .finally(() => {
                 btn.innerText = "시간 저장";
             });
     }
