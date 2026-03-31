@@ -123,8 +123,13 @@
         .then(res => res.json())
         .then(data => {
             if(data.success) {
-                document.getElementById('startTime').value = data.settings.start;
-                document.getElementById('endTime').value = data.settings.end;
+                // 구글 시트에서 가져온 값에서 혹시 모를 홑따옴표(')나 양옆 공백을 깨끗하게 제거합니다.
+                let startVal = data.settings.start ? String(data.settings.start).replace(/'/g, '').trim() : '';
+                let endVal = data.settings.end ? String(data.settings.end).replace(/'/g, '').trim() : '';
+
+                document.getElementById('startTime').value = startVal;
+                document.getElementById('endTime').value = endVal;
+                
                 renderTable(data.list || []);
             }
         });
