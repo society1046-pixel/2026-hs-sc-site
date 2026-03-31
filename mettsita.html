@@ -1,1 +1,81 @@
-1
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>신청 현황 (mettsita)</title>
+  <style>
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 20px; color: #4A5568; }
+    .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    h2 { color: #7BA4DB; margin-top: 0; border-bottom: 2px solid #EAF0F6; padding-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; text-align: center; }
+    th { background-color: #7BA4DB; color: white; padding: 12px; font-weight: bold; }
+    td { padding: 12px; border-bottom: 1px solid #EAF0F6; }
+    tr:hover { background-color: #FAFCFF; }
+    .badge-slot1 { background-color: #F6AD55; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; }
+    .badge-slot2 { background-color: #82CA9D; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; }
+    .btn { display: inline-block; padding: 10px 20px; background-color: #A0AEC0; color: white; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; margin-top: 20px; font-weight: bold; }
+  </style>
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
+    
+    // 권한 확인 (2학년, 학생회 등)
+    const userRole = parseInt(sessionStorage.getItem('userRole') || 0);
+    const userId = sessionStorage.getItem('userId') || '';
+    const is2ndGrade = userId.length === 4 && userId.startsWith('2');
+    const isAuthorized = is2ndGrade || (userRole >= 32 && userRole <= 46);
+    
+    if (!isAuthorized) {
+      alert("접근 권한이 없습니다.");
+      window.location.href = "main.html";
+    }
+
+    function loadApplications() {
+      document.getElementById('table-body').innerHTML = "<tr><td colspan='4'>데이터를 불러오는 중입니다...</td></tr>";
+      
+      fetch(`${API_URL}?action=getMettsiData`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.success || data.list.length === 0) {
+             document.getElementById('table-body').innerHTML = "<tr><td colspan='4'>이번 주 신청자가 없습니다.</td></tr>";
+             return;
+          }
+          
+          let html = '';
+          data.list.forEach(row => {
+            // row: [날짜, 타임, 신청자학번, 신청자이름, 파트너학번, 파트너이름]
+            let slotBadge = row[1] == '1' ? '<span class="badge-slot1">1타임</span>' : '<span class="badge-slot2">2타임</span>';
+            html += `<tr>
+                      <td>${row[0]}</td>
+                      <td>${slotBadge}</td>
+                      <td>${row[2]} ${row[3]}</td>
+                      <td>${row[4]} ${row[5]}</td>
+                    </tr>`;
+          });
+          document.getElementById('table-body').innerHTML = html;
+        });
+    }
+
+    window.onload = loadApplications;
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h2>이번 주 신청 현황</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>날짜</th>
+          <th>타임</th>
+          <th>신청자</th>
+          <th>짝꿍</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        </tbody>
+    </table>
+    <a href="main.html" class="btn">메인으로 돌아가기</a>
+    <a href="mettsi.html" class="btn" style="background-color: #7BA4DB;">신청하러 가기</a>
+  </div>
+</body>
+</html>
