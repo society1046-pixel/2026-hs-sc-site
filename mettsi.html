@@ -41,6 +41,8 @@
     .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #2D3748; font-size: 14px; }
     .form-control { width: 100%; padding: 12px; border: 1px solid #CBD5E0; border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; transition: border-color 0.2s; outline: none; background-color: white;}
     .form-control:focus { border-color: #7BA4DB; box-shadow: 0 0 0 2px rgba(123, 164, 219, 0.2); }
+    /* 읽기 전용 입력창 스타일 (잠금 상태일 때) */
+    .form-control[readonly] { background-color: #EAF0F6; cursor: not-allowed; color: #718096; }
     
     /* 하단 버튼 디자인 */
     .form-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 30px; }
@@ -62,6 +64,10 @@
     const userId = sessionStorage.getItem('userId') || '';
     const userName = sessionStorage.getItem('userName') || '';
     
+    // 현재 모드를 저장할 변수 추가
+    let currentApplyMode = 'week'; 
+    let todayStringForCheck = '';
+
     // 권한 확인 로직
     const is2ndGrade = userId.length === 4 && userId.startsWith('2');
     const isAuthorized = is2ndGrade || (currentRole >= 32 && currentRole <= 46);
@@ -71,26 +77,25 @@
       window.location.href = "main.html";
     }
 
-    // 서버(구글시트)에서 신청 모드(당일/일주일)를 불러와서 달력을 세팅하는 함수
     function loadServerSettingsAndSetDate() {
       fetch(`${API_URL}?action=getMettsiAdminData`)
         .then(res => res.json())
         .then(data => {
             if(data.success) {
-                const mode = data.settings.mode || 'week'; // 서버 설정값 (기본값: week)
+                const mode = data.settings.mode || 'week';
                 applyDateLimitsByMode(mode);
             } else {
-                applyDateLimitsByMode('week'); // 통신 성공했지만 데이터가 이상하면 기본값
+                applyDateLimitsByMode('week');
             }
         })
         .catch(err => {
             console.error("서버 설정 불러오기 실패:", err);
-            applyDateLimitsByMode('week'); // 통신 실패 시 기본값 적용
+            applyDateLimitsByMode('week'); 
         });
     }
 
-    // 모드에 따라 실제로 달력(input date) 선택 범위를 제한하는 함수
     function applyDateLimitsByMode(mode) {
+      currentApplyMode = mode; // 현재 모드 저장
       const dateInput = document.getElementById('applyDate');
       const todayDate = new Date();
       
@@ -101,13 +106,23 @@
         return `${yyyy}-${mm}-${dd}`;
       };
 
+      todayStringForCheck = formatDate(todayDate);
+
       if (mode === 'today') {
-        // [당일 모드] 오늘 날짜만 선택 가능하도록 min, max 둘 다 오늘로 고정
-        const todayStr = formatDate(todayDate);
-        dateInput.min = todayStr;
-        dateInput.max = todayStr;
+        // [당일 모드] 오늘 날짜 강제 입력 후 수정 불가능하게 잠금
+        dateInput.value = todayStringForCheck;
+        dateInput.min = todayStringForCheck;
+        dateInput.max = todayStringForCheck;
+        dateInput.readOnly = true; // 수정 금지 (달력 안 뜸)
+        
+        // 당일 모드 안내 문구 표시 (선택사항)
+        document.getElementById('date-help-text').innerText = "* 당일 모드가 켜져 있어 오늘 날짜로 고정됩니다.";
+        document.getElementById('date-help-text').style.color = "#E53E3E";
       } else {
-        // [일주일 모드] 이번 주 월요일 ~ 금요일 세팅 (주말 접속 시 다음 주로 세팅)
+        // [일주일 모드] 잠금 해제 및 주간 범위 설정
+        dateInput.readOnly = false;
+        document.getElementById('date-help-text').innerText = "";
+
         const dayOfWeek = todayDate.getDay();
         let distanceToMonday = (dayOfWeek === 0) ? 1 : (dayOfWeek === 6 ? 2 : 1 - dayOfWeek);
         
@@ -149,13 +164,16 @@
         actionBtn.onclick = logout;
       }
 
-      // 페이지 로딩 시 서버의 설정(당일/일주일 모드)을 불러오도록 호출 변경
       loadServerSettingsAndSetDate();
     }
 
     function checkDate(element) {
-        // 날짜 파싱 오류를 방지하기 위해 로컬 시간 기준으로 안전하게 요일을 추출합니다.
+        // 읽기 전용(당일 모드)일 때는 체크 무시
+        if (element.readOnly) return; 
+
         const [year, month, day] = element.value.split('-');
+        if (!year || !month || !day) return;
+
         const selectedDate = new Date(year, month - 1, day);
         const dayOfWeek = selectedDate.getDay();
         
@@ -173,6 +191,13 @@
       if (!applyDate || !timeSlot || !partnerId) {
         alert("모든 항목을 입력해주세요."); return;
       }
+      
+      // 당일 모드일 경우 제출 시 한 번 더 강력하게 검증
+      if (currentApplyMode === 'today' && applyDate !== todayStringForCheck) {
+        alert("현재 당일 신청만 가능합니다. 날짜를 확인해주세요.");
+        return;
+      }
+
       if (partnerId === userId) {
         alert("본인의 학번을 파트너로 지정할 수 없습니다."); return;
       }
@@ -181,7 +206,6 @@
       btn.innerText = "신청 중...";
       btn.disabled = true;
 
-      // URL 파라미터를 안전하게 전달하기 위해 변환
       const requestUrl = `${API_URL}?action=applyMettsi&userId=${userId}&userName=${encodeURIComponent(userName)}&partnerId=${encodeURIComponent(partnerId)}&date=${applyDate}&slot=${timeSlot}`;
       console.log("전송 요청 URL:", requestUrl);
 
@@ -191,7 +215,6 @@
             return res.json();
         })
         .then(data => {
-          console.log("서버 응답 결과:", data);
           if (data.success) {
             alert("신청이 완료되었습니다!");
             window.location.href = "mettsita.html";
@@ -251,6 +274,7 @@
       <div class="form-group">
         <label for="applyDate">신청 날짜</label>
         <input type="date" id="applyDate" class="form-control" onchange="checkDate(this)">
+        <div id="date-help-text" style="font-size: 12px; margin-top: 5px; font-weight: bold;"></div>
       </div>
 
       <div class="form-group">
