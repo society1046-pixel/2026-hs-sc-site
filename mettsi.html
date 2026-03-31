@@ -3,44 +3,113 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>프로그램 신청 (mettsi)</title>
+  <title>형석고등학교 학생회 - 프로그램 신청</title>
+  
   <style>
-    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 20px; color: #4A5568; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-    .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 400px; }
-    h2 { color: #7BA4DB; margin-top: 0; text-align: center; }
-    .info-box { background-color: #EAF0F6; padding: 15px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; color: #4A5568; line-height: 1.5; }
-    label { font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px; margin-top: 15px; }
-    select, input { width: 100%; padding: 12px; border: 1px solid #DCE4EC; border-radius: 8px; box-sizing: border-box; font-size: 14px; outline: none; }
-    select:focus, input:focus { border-color: #7BA4DB; }
-    button { width: 100%; padding: 14px; background-color: #7BA4DB; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 25px; }
-    button:hover { background-color: #5A88C7; }
-    .back-btn { background-color: #A0AEC0; margin-top: 10px; }
+    /* ---------------------------------------------------
+       1. 공통 디자인 시스템 (네비게이션 바, 사이드바 등) 
+       --------------------------------------------------- */
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
+    .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; padding: 0; }
+    .nav-center { display: flex; align-items: center; justify-content: center; }
+    .nav-logo { height: 35px; width: 35px; background-color: white; border-radius: 50%; margin-right: 10px; object-fit: contain; padding: 2px; }
+    .nav-title { font-size: 20px; font-weight: bold; margin: 0; }
+    
+    .sidebar { height: 100%; width: 280px; position: fixed; top: 0; left: -280px; background-color: white; box-shadow: 4px 0 15px rgba(0,0,0,0.05); transition: 0.3s; z-index: 1000; overflow-x: hidden; display: flex; flex-direction: column; }
+    .sidebar-header { background-color: #FAFCFF; padding: 30px 20px 20px; border-bottom: 1px solid #EAF0F6; position: relative; }
+    .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; border: none; background: none; color: #A0AEC0; }
+    .user-id-text { font-size: 20px; font-weight: bold; color: #2D3748; margin: 0 0 8px 0; }
+    .user-role-badge { display: inline-block; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: bold; }
+    .menu-list { padding: 10px 0; flex-grow: 1; }
+    .menu-item { padding: 15px 25px; display: block; color: #7BA4DB; font-weight: bold; text-decoration: none; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; }
+    .menu-item:hover { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; }
+    .action-btn { margin: 20px; padding: 12px 20px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); transition: 0.2s; }
+    
+    /* ---------------------------------------------------
+       2. 메인 컨텐츠 및 폼(신청서) 전용 디자인
+       --------------------------------------------------- */
+    .container { max-width: 500px; /* 폼이 너무 넓어지지 않게 조정 */ margin: 40px auto; padding: 0 15px; }
+    .card { background: white; padding: 40px 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; }
+    .card h2 { margin-top: 0; color: #2D3748; border-bottom: 2px solid #F4F7FB; padding-bottom: 15px; margin-bottom: 25px; text-align: center; }
+
+    /* 안내 문구 박스 */
+    .info-box { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; padding: 15px; border-radius: 4px; font-size: 14px; margin-bottom: 25px; color: #4A5568; line-height: 1.6; }
+    
+    /* 입력 폼 디자인 */
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #2D3748; font-size: 14px; }
+    .form-control { width: 100%; padding: 12px; border: 1px solid #CBD5E0; border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; transition: border-color 0.2s; outline: none; background-color: white;}
+    .form-control:focus { border-color: #7BA4DB; box-shadow: 0 0 0 2px rgba(123, 164, 219, 0.2); }
+    
+    /* 하단 버튼 디자인 */
+    .form-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 30px; }
+    .btn-submit { background-color: #7BA4DB; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; width: 100%; }
+    .btn-submit:hover { background-color: #638CBE; }
+    .btn-submit:disabled { background-color: #A0AEC0; cursor: not-allowed; }
+    .btn-cancel { background-color: #EAF0F6; color: #4A5568; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; width: 100%; }
+    .btn-cancel:hover { background-color: #CBD5E0; }
   </style>
+
   <script>
+    // ==========================================
+    // 기존 기능 및 API 스크립트 영역 (그대로 유지)
+    // ==========================================
     const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
     
-    // 권한 확인
-    const userRole = parseInt(sessionStorage.getItem('userRole') || 0);
+    const roleNames = { 1: "재학생", 42: "전교 회장", 45: "선생님", 46: "관리자" };
+    let currentRole = parseInt(sessionStorage.getItem('userRole') || 0);
     const userId = sessionStorage.getItem('userId') || '';
     const userName = sessionStorage.getItem('userName') || '';
     
+    // 권한 확인 로직
     const is2ndGrade = userId.length === 4 && userId.startsWith('2');
-    const isAuthorized = is2ndGrade || (userRole >= 32 && userRole <= 46);
+    const isAuthorized = is2ndGrade || (currentRole >= 32 && currentRole <= 46);
     
     if (!isAuthorized) {
       alert("접근 권한이 없습니다. (2학년 및 학생회 전용)");
       window.location.href = "main.html";
     }
 
+    // 초기 화면 세팅 (사이드바 정보 등)
+    function initPage() {
+      const displayId = document.getElementById('display-id');
+      const roleDisplay = document.getElementById('display-role');
+      const menuContainer = document.getElementById('menu-list-container');
+      const actionBtn = document.getElementById('action-btn');
+
+      if (currentRole === 0) {
+        displayId.innerText = "로그인이 필요합니다.";
+        roleDisplay.innerText = "비회원";
+        roleDisplay.style.backgroundColor = "#A0AEC0";
+        menuContainer.innerHTML = `<div class="menu-item" onclick="goToPage('main')">메인 화면</div>`;
+        actionBtn.innerText = "로그인 하러가기";
+        actionBtn.style.backgroundColor = "#7BA4DB";
+        actionBtn.onclick = function() { window.location.href = 'loginh.html'; };
+      } else {
+        displayId.innerText = userId;
+        roleDisplay.innerText = roleNames[currentRole] || "권한 확인 됨";
+        roleDisplay.style.backgroundColor = "#82CA9D"; 
+        menuContainer.innerHTML = `
+          <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+          <div class="menu-item" onclick="goToPage('scint')">학생회 조직도</div>
+        `;
+        actionBtn.innerText = "로그아웃";
+        actionBtn.style.backgroundColor = "#F19C99";
+        actionBtn.onclick = logout;
+      }
+    }
+
+    // 날짜 제한 체크 (월,화,목,금)
     function checkDate(element) {
         const day = new Date(element.value).getDay();
-        // 1:월, 2:화, 4:목, 5:금 (수=3, 토=6, 일=0)
         if(day === 0 || day === 3 || day === 6) {
             alert("월, 화, 목, 금요일만 신청 가능합니다.");
             element.value = '';
         }
     }
 
+    // 신청서 제출
     function submitApplication() {
       const applyDate = document.getElementById('applyDate').value;
       const timeSlot = document.getElementById('timeSlot').value;
@@ -57,15 +126,14 @@
       btn.innerText = "신청 중...";
       btn.disabled = true;
 
-      // 구글 앱스 스크립트로 데이터 전송 (action=applyMettsi)
       fetch(`${API_URL}?action=applyMettsi&userId=${userId}&userName=${encodeURIComponent(userName)}&partnerId=${partnerId}&date=${applyDate}&slot=${timeSlot}`, { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
           if (data.success) {
             alert("신청이 완료되었습니다!");
-            window.location.href = "mettsita.html"; // 확인 페이지로 이동
+            window.location.href = "mettsita.html";
           } else {
-            alert("신청 실패: " + data.message); // 예: 정원 초과, 이미 신청함, 시간 아님 등
+            alert("신청 실패: " + data.message);
             btn.innerText = "신청하기";
             btn.disabled = false;
           }
@@ -75,33 +143,74 @@
             btn.disabled = false;
         });
     }
+
+    // 사이드바 토글 및 공통 이동 함수
+    function toggleMenu() {
+      const sidebar = document.getElementById("mySidebar");
+      sidebar.style.left = sidebar.style.left === "0px" ? "-280px" : "0px";
+    }
+    function logout() { if(confirm('로그아웃 하시겠습니까?')) { sessionStorage.clear(); window.location.reload(); } }
+    function goToPage(pageName) { window.location.href = pageName + '.html'; }
   </script>
 </head>
-<body>
-  <div class="card">
-    <h2>프로그램 신청</h2>
-    <div class="info-box">
-      - 2인 1조로 신청합니다.<br>
-      - 월, 화, 목, 금요일만 가능합니다.<br>
-      - 각 타임당 선착순 5팀 제한이 있습니다.<br>
-      - 일주일에 1회만 참여 가능합니다.
+<body onload="initPage()">
+
+  <div class="navbar">
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+    <div class="nav-center">
+      <img src="https://drive.google.com/thumbnail?id=1-vFaLyktqvl_ywa0BpiBppSI6lEgsKDd&sz=w200" alt="로고" class="nav-logo">
+      <p class="nav-title">형석고등학교 학생회</p>
     </div>
-
-    <label>신청 날짜 (월, 화, 목, 금)</label>
-    <input type="date" id="applyDate" onchange="checkDate(this)">
-
-    <label>타임 선택</label>
-    <select id="timeSlot">
-      <option value="">타임을 선택하세요</option>
-      <option value="1">1번 타임 (5팀 제한)</option>
-      <option value="2">2번 타임 (5팀 제한)</option>
-    </select>
-
-    <label>짝꿍 학번</label>
-    <input type="text" id="partnerId" placeholder="예: 2101">
-
-    <button id="submitBtn" onclick="submitApplication()">신청하기</button>
-    <button class="back-btn" onclick="window.location.href='main.html'">메인으로 돌아가기</button>
+    <div style="width: 24px;"></div> 
   </div>
+
+  <div id="mySidebar" class="sidebar">
+    <div class="sidebar-header">
+      <button class="close-btn" onclick="toggleMenu()">×</button>
+      <h3 class="user-id-text" id="display-id">ID 로딩중...</h3>
+      <span class="user-role-badge" id="display-role">권한 로딩중...</span>
+    </div>
+    <div class="menu-list" id="menu-list-container"></div>
+    <button id="action-btn" class="action-btn">버튼 로딩중...</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>프로그램 신청</h2>
+      
+      <div class="info-box">
+        • 2인 1조로 신청합니다.<br>
+        • 월, 화, 목, 금요일만 가능합니다.<br>
+        • 각 타임당 선착순 5팀 제한이 있습니다.<br>
+        • 일주일에 1회만 참여 가능합니다.
+      </div>
+
+      <div class="form-group">
+        <label for="applyDate">신청 날짜</label>
+        <input type="date" id="applyDate" class="form-control" onchange="checkDate(this)">
+      </div>
+
+      <div class="form-group">
+        <label for="timeSlot">타임 선택</label>
+        <select id="timeSlot" class="form-control">
+          <option value="">타임을 선택하세요</option>
+          <option value="1">1번 타임 (5팀 제한)</option>
+          <option value="2">2번 타임 (5팀 제한)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="partnerId">짝꿍 학번</label>
+        <input type="text" id="partnerId" class="form-control" placeholder="예: 2101">
+      </div>
+
+      <div class="form-actions">
+        <button id="submitBtn" class="btn-submit" onclick="submitApplication()">신청하기</button>
+        <button class="btn-cancel" onclick="goToPage('main')">메인으로 돌아가기</button>
+      </div>
+      
+    </div>
+  </div>
+
 </body>
 </html>
