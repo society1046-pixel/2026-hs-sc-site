@@ -3,33 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>신청 관리자 센터 (mettsitat)</title>
+  <title>형석고등학교 학생회 - 신청 관리자 센터</title>
+  
   <style>
-    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 20px; color: #4A5568; }
-    .container { max-width: 800px; margin: 0 auto; }
-    .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
-    h3 { color: #7BA4DB; margin-top: 0; border-bottom: 2px solid #EAF0F6; padding-bottom: 10px; }
-    .form-group { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
-    input, select { padding: 10px; border: 1px solid #DCE4EC; border-radius: 8px; flex-grow: 1; outline: none; }
-    button { padding: 10px 15px; background-color: #7BA4DB; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; white-space: nowrap; }
-    button:hover { background-color: #5A88C7; }
-    .del-btn { background-color: #F19C99; padding: 6px 10px; font-size: 12px; }
-    table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; }
-    th { background-color: #F4F7FB; padding: 10px; border-bottom: 2px solid #DCE4EC; }
-    td { padding: 10px; border-bottom: 1px solid #EAF0F6; }
+    /* ---------------------------------------------------
+       1. 공통 디자인 시스템 (네비게이션 바, 사이드바 등) 
+       --------------------------------------------------- */
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
+    .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; padding: 0; }
+    .nav-center { display: flex; align-items: center; justify-content: center; }
+    .nav-logo { height: 35px; width: 35px; background-color: white; border-radius: 50%; margin-right: 10px; object-fit: contain; padding: 2px; }
+    .nav-title { font-size: 20px; font-weight: bold; margin: 0; }
+    
+    .sidebar { height: 100%; width: 280px; position: fixed; top: 0; left: -280px; background-color: white; box-shadow: 4px 0 15px rgba(0,0,0,0.05); transition: 0.3s; z-index: 1000; overflow-x: hidden; display: flex; flex-direction: column; }
+    .sidebar-header { background-color: #FAFCFF; padding: 30px 20px 20px; border-bottom: 1px solid #EAF0F6; position: relative; }
+    .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; border: none; background: none; color: #A0AEC0; }
+    .user-id-text { font-size: 20px; font-weight: bold; color: #2D3748; margin: 0 0 8px 0; }
+    .user-role-badge { display: inline-block; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: bold; }
+    .menu-list { padding: 10px 0; flex-grow: 1; }
+    .menu-item { padding: 15px 25px; display: block; color: #7BA4DB; font-weight: bold; text-decoration: none; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; }
+    .menu-item:hover { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; }
+    .action-btn { margin: 20px; padding: 12px 20px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); transition: 0.2s; }
+    
+    /* ---------------------------------------------------
+       2. 관리자 센터 전용 디자인
+       --------------------------------------------------- */
+    .container { max-width: 900px; margin: 40px auto; padding: 0 15px; display: flex; flex-direction: column; gap: 20px; }
+    .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; }
+    .card h3 { margin-top: 0; color: #2D3748; border-bottom: 2px solid #F4F7FB; padding-bottom: 15px; margin-bottom: 20px; font-size: 18px; }
+
+    /* 입력 폼 디자인 */
+    .form-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .form-row label { font-weight: bold; color: #4A5568; font-size: 14px; white-space: nowrap; }
+    .form-control { padding: 10px 12px; border: 1px solid #CBD5E0; border-radius: 8px; font-family: inherit; font-size: 14px; flex-grow: 1; min-width: 120px; outline: none; transition: 0.2s; }
+    .form-control:focus { border-color: #7BA4DB; box-shadow: 0 0 0 2px rgba(123, 164, 219, 0.2); }
+    .info-text { font-size: 12px; color: #A0AEC0; margin: 5px 0 0 0; }
+    
+    /* 버튼 디자인 */
+    .btn { padding: 10px 18px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.2s; white-space: nowrap; }
+    .btn-primary { background-color: #7BA4DB; }
+    .btn-primary:hover { background-color: #638CBE; }
+    .btn-success { background-color: #82CA9D; }
+    .btn-success:hover { background-color: #6BB788; }
+    .btn-danger { background-color: #F19C99; padding: 6px 12px; font-size: 12px; }
+    .btn-danger:hover { background-color: #E57D7A; }
+    .btn-secondary { background-color: #A0AEC0; display: block; width: 100%; text-align: center; text-decoration: none; padding: 14px; box-sizing: border-box; margin-top: 10px; }
+    .btn-secondary:hover { background-color: #718096; }
+
+    /* 테이블 디자인 */
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; white-space: nowrap; }
+    th { background-color: #F4F7FB; padding: 12px; border-bottom: 2px solid #DCE4EC; color: #2D3748; font-weight: bold; }
+    td { padding: 12px; border-bottom: 1px solid #EAF0F6; color: #4A5568; }
+    tr:hover td { background-color: #FAFCFF; }
   </style>
+
   <script>
+    // ==========================================
+    // 기존 기능 및 API 스크립트 영역 (그대로 유지)
+    // ==========================================
     const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
     
-    // 선생님(45) & 관리자(46)만 접근 허용
-    const userRole = parseInt(sessionStorage.getItem('userRole') || 0);
-    if (userRole !== 45 && userRole !== 46) {
-      alert("선생님 및 관리자 전용 페이지입니다.");
-      window.location.href = "main.html";
+    const roleNames = { 1: "재학생", 42: "전교 회장", 45: "선생님", 46: "관리자" };
+    let currentRole = parseInt(sessionStorage.getItem('userRole') || 0);
+    const userId = sessionStorage.getItem('userId') || '';
+
+    // 권한 확인 및 초기 설정
+    function initPage() {
+      // 선생님(45) & 관리자(46)만 접근 허용
+      if (currentRole !== 45 && currentRole !== 46) {
+        alert("선생님 및 관리자 전용 페이지입니다.");
+        window.location.href = "main.html";
+        return;
+      }
+
+      // 1. 사이드바 세팅
+      const displayId = document.getElementById('display-id');
+      const roleDisplay = document.getElementById('display-role');
+      const menuContainer = document.getElementById('menu-list-container');
+      const actionBtn = document.getElementById('action-btn');
+
+      displayId.innerText = userId;
+      roleDisplay.innerText = roleNames[currentRole] || "권한 미상";
+      roleDisplay.style.backgroundColor = currentRole === 46 ? "#E53E3E" : "#82CA9D"; // 관리자는 빨간색 뱃지
+      
+      menuContainer.innerHTML = `
+        <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+        <div class="menu-item" onclick="goToPage('scint')">학생회 조직도</div>
+      `;
+      actionBtn.innerText = "로그아웃";
+      actionBtn.style.backgroundColor = "#F19C99";
+      actionBtn.onclick = logout;
+
+      // 2. 관리자 데이터(시간, 명단) 불러오기
+      loadAdminData();
     }
 
+    // 데이터 불러오기
     function loadAdminData() {
-      // 설정(시간) 불러오기 및 명단 불러오기
+      document.getElementById('admin-table-body').innerHTML = "<tr><td colspan='5'>데이터를 불러오는 중입니다...</td></tr>";
+
       fetch(`${API_URL}?action=getMettsiAdminData`)
         .then(res => res.json())
         .then(data => {
@@ -41,6 +115,7 @@
         });
     }
 
+    // 테이블 그리기
     function renderTable(list) {
         let html = '';
         list.forEach((row, index) => {
@@ -50,99 +125,152 @@
                       <td>${row[1]}타임</td>
                       <td>${row[2]} (${row[3]})</td>
                       <td>${row[4]} (${row[5]})</td>
-                      <td><button class="del-btn" onclick="deleteRecord(${row[6]})">삭제</button></td>
+                      <td><button class="btn btn-danger" onclick="deleteRecord(${row[6]})">삭제</button></td>
                     </tr>`;
         });
         document.getElementById('admin-table-body').innerHTML = html || "<tr><td colspan='5'>신청자가 없습니다.</td></tr>";
     }
 
+    // 시간 설정 저장
     function saveSettings() {
         const start = document.getElementById('startTime').value;
         const end = document.getElementById('endTime').value;
+        const btn = document.getElementById('saveTimeBtn');
+        btn.innerText = "저장중...";
+        
         fetch(`${API_URL}?action=setMettsiTime&start=${start}&end=${end}`)
             .then(res => res.json())
-            .then(data => alert(data.success ? "저장되었습니다." : "오류 발생"));
+            .then(data => {
+                alert(data.success ? "저장되었습니다." : "오류 발생");
+                btn.innerText = "시간 저장";
+            });
     }
 
+    // 관리자 강제 추가
     function adminAdd() {
         const date = document.getElementById('addDate').value;
         const slot = document.getElementById('addSlot').value;
         const id1 = document.getElementById('addId1').value;
         const id2 = document.getElementById('addId2').value;
 
-        if(!date || !slot || !id1 || !id2) { alert('모두 입력하세요'); return; }
+        if(!date || !slot || !id1 || !id2) { alert('모든 항목을 입력하세요.'); return; }
+
+        const btn = document.getElementById('addBtn');
+        btn.innerText = "추가중...";
 
         fetch(`${API_URL}?action=adminAddMettsi&date=${date}&slot=${slot}&id1=${id1}&id2=${id2}`)
             .then(res => res.json())
             .then(data => {
                 if(data.success) {
                     alert("추가되었습니다.");
-                    loadAdminData(); // 새로고침
+                    loadAdminData(); // 성공 시 명단 새로고침
+                    // 입력창 초기화
+                    document.getElementById('addId1').value = '';
+                    document.getElementById('addId2').value = '';
                 } else {
-                    alert("추가 실패: " + data.message); // 없는 학번일 경우 등
+                    alert("추가 실패: " + data.message);
+                }
+                btn.innerText = "강제 추가";
+            });
+    }
+
+    // 신청 기록 삭제
+    function deleteRecord(rowIndex) {
+        if(!confirm("정말 이 신청 기록을 삭제하시겠습니까?")) return;
+        
+        fetch(`${API_URL}?action=deleteMettsi&rowIndex=${rowIndex}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert("삭제되었습니다.");
+                    loadAdminData();
+                } else {
+                    alert("삭제 실패");
                 }
             });
     }
 
-    function deleteRecord(rowIndex) {
-        if(!confirm("정말 삭제하시겠습니까?")) return;
-        fetch(`${API_URL}?action=deleteMettsi&rowIndex=${rowIndex}`)
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) loadAdminData();
-            });
+    // 공통 기능
+    function toggleMenu() {
+      const sidebar = document.getElementById("mySidebar");
+      sidebar.style.left = sidebar.style.left === "0px" ? "-280px" : "0px";
     }
-
-    window.onload = loadAdminData;
+    function logout() { if(confirm('로그아웃 하시겠습니까?')) { sessionStorage.clear(); window.location.reload(); } }
+    function goToPage(pageName) { window.location.href = pageName + '.html'; }
   </script>
 </head>
-<body>
+<body onload="initPage()">
+
+  <div class="navbar">
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+    <div class="nav-center">
+      <img src="https://drive.google.com/thumbnail?id=1-vFaLyktqvl_ywa0BpiBppSI6lEgsKDd&sz=w200" alt="로고" class="nav-logo">
+      <p class="nav-title">형석고등학교 학생회</p>
+    </div>
+    <div style="width: 24px;"></div> 
+  </div>
+
+  <div id="mySidebar" class="sidebar">
+    <div class="sidebar-header">
+      <button class="close-btn" onclick="toggleMenu()">×</button>
+      <h3 class="user-id-text" id="display-id">ID 로딩중...</h3>
+      <span class="user-role-badge" id="display-role">권한 로딩중...</span>
+    </div>
+    <div class="menu-list" id="menu-list-container"></div>
+    <button id="action-btn" class="action-btn">버튼 로딩중...</button>
+  </div>
+
   <div class="container">
     
     <div class="card">
       <h3>⏰ 신청 오픈/마감 시간 설정</h3>
-      <div class="form-group">
-        <label>시작 시간</label>
-        <input type="time" id="startTime">
-        <label>마감 시간</label>
-        <input type="time" id="endTime">
-        <button onclick="saveSettings()">시간 저장</button>
+      <div class="form-row">
+        <label for="startTime">시작 시간</label>
+        <input type="time" id="startTime" class="form-control">
+        <label for="endTime">마감 시간</label>
+        <input type="time" id="endTime" class="form-control">
+        <button id="saveTimeBtn" class="btn btn-primary" onclick="saveSettings()">시간 저장</button>
       </div>
-      <p style="font-size: 12px; color: #A0AEC0; margin:0;">* 설정한 시간 외에는 학생들이 신청할 수 없습니다.</p>
+      <p class="info-text">* 설정한 시간 외에는 학생들이 신청 페이지에서 신청할 수 없습니다.</p>
     </div>
 
     <div class="card">
-      <h3>➕ 학생 강제 추가</h3>
-      <div class="form-group">
-        <input type="date" id="addDate">
-        <select id="addSlot">
+      <h3>➕ 학생 강제 추가 (관리자 권한)</h3>
+      <div class="form-row">
+        <input type="date" id="addDate" class="form-control">
+        <select id="addSlot" class="form-control">
           <option value="1">1번 타임</option>
           <option value="2">2번 타임</option>
         </select>
-        <input type="text" id="addId1" placeholder="학번1 (예: 2101)">
-        <input type="text" id="addId2" placeholder="학번2 (예: 2102)">
-        <button onclick="adminAdd()" style="background-color: #82CA9D;">추가</button>
+        <input type="text" id="addId1" class="form-control" placeholder="학번1 (예: 2101)">
+        <input type="text" id="addId2" class="form-control" placeholder="학번2 (예: 2102)">
+        <button id="addBtn" class="btn btn-success" onclick="adminAdd()">강제 추가</button>
       </div>
+      <p class="info-text">* 학생 정원 및 시간 설정과 관계없이 강제로 명단에 추가합니다.</p>
     </div>
 
     <div class="card">
-      <h3>📋 신청자 관리 (삭제)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>날짜</th>
-            <th>타임</th>
-            <th>신청자 (학번/이름)</th>
-            <th>짝꿍 (학번/이름)</th>
-            <th>관리</th>
-          </tr>
-        </thead>
-        <tbody id="admin-table-body">
+      <h3>📋 신청자 전체 명단 관리</h3>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>날짜</th>
+              <th>타임</th>
+              <th>신청자 (학번/이름)</th>
+              <th>짝꿍 (학번/이름)</th>
+              <th>관리</th>
+            </tr>
+          </thead>
+          <tbody id="admin-table-body">
             </tbody>
-      </table>
+        </table>
+      </div>
     </div>
     
-    <button onclick="window.location.href='main.html'" style="background-color: #A0AEC0;">메인으로 돌아가기</button>
+    <a href="main.html" class="btn btn-secondary">메인으로 돌아가기</a>
+
   </div>
+
 </body>
 </html>
