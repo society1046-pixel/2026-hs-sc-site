@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>형석고등학교 학생회 - 프로그램 신청</title>
+  <title>형석고등학교 학생회 - 멘토멘티 신청</title>
   
   <style>
     /* ---------------------------------------------------
@@ -73,7 +73,7 @@
     const isAuthorized = is2ndGrade || (currentRole >= 32 && currentRole <= 46);
     
     if (!isAuthorized) {
-      alert("접근 권한이 없습니다. (2학년 및 학생회 전용)");
+      alert("접근 권한이 없습니다. (2학년 전용)");
       window.location.href = "main.html";
     }
 
@@ -116,7 +116,7 @@
         dateInput.readOnly = true; // 수정 금지 (달력 안 뜸)
         
         // 당일 모드 안내 문구 표시 (선택사항)
-        document.getElementById('date-help-text').innerText = "* 당일 모드가 켜져 있어 오늘 날짜로 고정됩니다.";
+        document.getElementById('date-help-text').innerText = "* 당일에만 신청 가능하므로, 날짜가 고정되었습니다.";
         document.getElementById('date-help-text').style.color = "#E53E3E";
       } else {
         // [일주일 모드] 잠금 해제 및 주간 범위 설정
@@ -245,7 +245,7 @@
     <button class="menu-btn" onclick="toggleMenu()">☰</button>
     <div class="nav-center">
       <img src="https://drive.google.com/thumbnail?id=1-vFaLyktqvl_ywa0BpiBppSI6lEgsKDd&sz=w200" alt="로고" class="nav-logo">
-      <p class="nav-title">형석고등학교 학생회</p>
+      <p class="nav-title">2학년부 멘토멘티 신청</p>
     </div>
     <div style="width: 24px;"></div> 
   </div>
@@ -262,13 +262,13 @@
 
   <div class="container">
     <div class="card">
-      <h2>프로그램 신청</h2>
+      <h2>2학년부 멘토멘티 신청</h2>
       
       <div class="info-box">
-        • 2인 1조로 신청합니다.<br>
-        • 월, 화, 목, 금요일만 가능합니다.<br>
-        • 각 타임당 선착순 5팀 제한이 있습니다.<br>
-        • 일주일에 1회만 참여 가능합니다.
+        • 야간 교실개방 프로그램 운영시간은 1교시와 2교시로 운영됩니다.<br>
+        • 월요일~금요일(수요일 제외)중 1회만 참여 가능합니다.<br>
+        • 각 교시당 1:1로 구성되며, 최대 5팀까지 가능합니다.<br>
+        • 활동 참여를 마치고 멘티 학생은 활동일지를 작성합니다.
       </div>
 
       <div class="form-group">
@@ -281,13 +281,13 @@
         <label for="timeSlot">타임 선택</label>
         <select id="timeSlot" class="form-control">
           <option value="">타임을 선택하세요</option>
-          <option value="1">1번 타임 (5팀 제한)</option>
-          <option value="2">2번 타임 (5팀 제한)</option>
+          <option value="1">1교시 (6:50~8:00)</option>
+          <option value="2">2번 타임 (8:10~9:20)</option>
         </select>
       </div>
 
       <div class="form-group">
-        <label for="partnerId">짝꿍 학번</label>
+        <label for="partnerId">멘티 학번</label>
         <input type="text" id="partnerId" class="form-control" placeholder="예: 2101">
       </div>
 
