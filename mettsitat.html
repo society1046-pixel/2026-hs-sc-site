@@ -123,12 +123,14 @@
         .then(res => res.json())
         .then(data => {
             if(data.success) {
-                // 구글 시트에서 가져온 값에서 혹시 모를 홑따옴표(')나 양옆 공백을 깨끗하게 제거합니다.
                 let startVal = data.settings.start ? String(data.settings.start).replace(/'/g, '').trim() : '';
                 let endVal = data.settings.end ? String(data.settings.end).replace(/'/g, '').trim() : '';
+                // 서버에서 가져온 신청 모드 적용 (없으면 기본값 week)
+                let modeVal = data.settings.mode ? String(data.settings.mode).trim() : 'week';
 
                 document.getElementById('startTime').value = startVal;
                 document.getElementById('endTime').value = endVal;
+                document.getElementById('applyMode').value = modeVal;
                 
                 renderTable(data.list || []);
             }
@@ -138,13 +140,11 @@
     function renderTable(list) {
         const thisWeekTargetDates = getThisWeekDays();
         
-        // 1. 기본적으로 이번 주 월, 화, 목, 금 뼈대 생성
         const groups = {};
         thisWeekTargetDates.forEach(date => {
             groups[date] = { 1: [], 2: [] };
         });
 
-        // 2. 서버 데이터 분류
         list.forEach(row => {
             const dateStr = row[0];
             const slot = row[1];
@@ -152,7 +152,6 @@
             groups[dateStr][slot].push(row);
         });
 
-        // 3. HTML 생성
         const sortedDates = Object.keys(groups).sort((a, b) => new Date(a) - new Date(b));
         const daysKor = ['일', '월', '화', '수', '목', '금', '토'];
         let html = '';
@@ -161,7 +160,6 @@
             const d = new Date(date);
             const dayText = isNaN(d) ? '' : ` (${daysKor[d.getDay()]})`;
 
-            // 날짜 헤더 줄
             html += `<tr style="background-color: #EAF0F6; border-top: 2px solid #CBD5E0;">
                         <td colspan="5" style="text-align: center; font-weight: bold; color: #2D3748; padding: 12px; font-size: 15px;">
                             📅 ${date}${dayText}
@@ -170,7 +168,6 @@
 
             let hasData = false;
 
-            // 1타임, 2타임 출력
             [1, 2].forEach(slot => {
                 const items = groups[date][slot];
                 if (items && items.length > 0) {
@@ -199,6 +196,7 @@
     function saveSettings() {
         const start = document.getElementById('startTime').value;
         const end = document.getElementById('endTime').value;
+        const mode = document.getElementById('applyMode').value; // 새로 추가된 모드 값
         const btn = document.getElementById('saveTimeBtn');
         
         if(!start || !end) {
@@ -208,7 +206,8 @@
 
         btn.innerText = "저장중...";
         
-        const requestUrl = `${API_URL}?action=setMettsiTime&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&userId=${userId}&role=${currentRole}`;
+        // 서버에 mode 값도 함께 전송합니다.
+        const requestUrl = `${API_URL}?action=setMettsiTime&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&mode=${encodeURIComponent(mode)}&userId=${userId}&role=${currentRole}`;
 
         fetch(requestUrl)
             .then(res => {
@@ -217,17 +216,17 @@
             })
             .then(data => {
                 if (data.success) {
-                    alert("저장되었습니다.");
+                    alert("설정이 저장되었습니다.");
                 } else {
                     alert("오류 발생: " + (data.message || "서버에서 저장을 거절했습니다."));
                 }
             })
             .catch(error => {
                 console.error("Fetch 통신 에러:", error);
-                alert("서버 통신 중 에러가 발생했습니다. (구글 앱스 스크립트 쪽 코드를 확인해 주세요.)");
+                alert("서버 통신 중 에러가 발생했습니다.");
             })
             .finally(() => {
-                btn.innerText = "시간 저장";
+                btn.innerText = "설정 저장";
             });
     }
 
@@ -304,15 +303,22 @@
   <div class="container">
     
     <div class="card">
-      <h3>⏰ 신청 오픈/마감 시간 설정</h3>
+      <h3>⏰ 신청 환경 설정</h3>
       <div class="form-row">
+        <label for="applyMode">신청 모드</label>
+        <select id="applyMode" class="form-control" style="background-color: #FAFCFF; border-color: #7BA4DB; font-weight: bold;">
+          <option value="week">이번 주 전체 개방</option>
+          <option value="today">오늘 하루(당일)만 개방</option>
+        </select>
+      </div>
+      <div class="form-row" style="margin-top: 15px;">
         <label for="startTime">시작 시간</label>
         <input type="time" id="startTime" class="form-control">
         <label for="endTime">마감 시간</label>
         <input type="time" id="endTime" class="form-control">
-        <button id="saveTimeBtn" class="btn btn-primary" onclick="saveSettings()">시간 저장</button>
+        <button id="saveTimeBtn" class="btn btn-primary" onclick="saveSettings()">설정 저장</button>
       </div>
-      <p class="info-text">* 설정한 시간 외에는 학생들이 신청 페이지에서 신청할 수 없습니다.</p>
+      <p class="info-text">* '이번 주 전체 개방'은 월~금 모두 신청 가능하게 하며, '오늘 하루만 개방'은 접속한 당일 날짜만 선택 가능하게 만듭니다.</p>
     </div>
 
     <div class="card">
