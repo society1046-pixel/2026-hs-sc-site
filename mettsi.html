@@ -1,107 +1,166 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>프로그램 신청 (mettsi)</title>
+  <title>형석고등학교 학생회 - 회의록 게시판</title>
   <style>
-    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 20px; color: #4A5568; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-    .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 400px; }
-    h2 { color: #7BA4DB; margin-top: 0; text-align: center; }
-    .info-box { background-color: #EAF0F6; padding: 15px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; color: #4A5568; line-height: 1.5; }
-    label { font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px; margin-top: 15px; }
-    select, input { width: 100%; padding: 12px; border: 1px solid #DCE4EC; border-radius: 8px; box-sizing: border-box; font-size: 14px; outline: none; }
-    select:focus, input:focus { border-color: #7BA4DB; }
-    button { width: 100%; padding: 14px; background-color: #7BA4DB; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 25px; }
-    button:hover { background-color: #5A88C7; }
-    .back-btn { background-color: #A0AEC0; margin-top: 10px; }
+    /* 공통 디자인 시스템 적용 */
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
+    .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; padding: 0; }
+    .nav-center { display: flex; align-items: center; justify-content: center; }
+    .nav-logo { height: 35px; width: 35px; background-color: white; border-radius: 50%; margin-right: 10px; object-fit: contain; padding: 2px; }
+    .nav-title { font-size: 20px; font-weight: bold; margin: 0; }
+    
+    .sidebar { height: 100%; width: 280px; position: fixed; top: 0; left: -280px; background-color: white; box-shadow: 4px 0 15px rgba(0,0,0,0.05); transition: 0.3s; z-index: 1000; overflow-x: hidden; display: flex; flex-direction: column; }
+    .sidebar-header { background-color: #FAFCFF; padding: 30px 20px 20px; border-bottom: 1px solid #EAF0F6; position: relative; }
+    .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; border: none; background: none; color: #A0AEC0; }
+    .user-id-text { font-size: 20px; font-weight: bold; color: #2D3748; margin: 0 0 8px 0; }
+    .user-role-badge { display: inline-block; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: bold; }
+    .menu-list { padding: 10px 0; flex-grow: 1; }
+    .menu-item { padding: 15px 25px; display: block; color: #7BA4DB; font-weight: bold; text-decoration: none; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; }
+    .menu-item:hover { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; }
+    .action-btn { margin: 20px; padding: 12px 20px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); transition: 0.2s; }
+    
+    .container { max-width: 900px; margin: 40px auto; padding: 0 15px; }
+    .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; }
+    .card h2 { margin-top: 0; color: #2D3748; border-bottom: 2px solid #F4F7FB; padding-bottom: 15px; margin-bottom: 20px; text-align: center; }
+
+    /* 게시판 전용 스타일 */
+    .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .write-btn { background-color: #7BA4DB; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .write-btn:hover { background-color: #638CBE; }
+    
+    .board-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .board-table th { background-color: #F4F7FB; color: #4A5568; padding: 12px; border-bottom: 2px solid #EAF0F6; font-size: 14px; }
+    .board-table td { padding: 15px 12px; border-bottom: 1px solid #EAF0F6; color: #2D3748; font-size: 15px; }
+    .board-table tr:hover td { background-color: #FAFCFF; cursor: pointer; }
+    .col-id { width: 60px; text-align: center; }
+    .col-title { text-align: left; font-weight: bold; }
+    .col-author { width: 100px; text-align: center; }
+    .col-date { width: 100px; text-align: center; color: #A0AEC0; font-size: 13px; }
+
+    /* 모바일 반응형 */
+    @media (max-width: 600px) {
+      .col-author, .col-id { display: none; }
+      .board-table td, .board-table th { padding: 10px 5px; }
+    }
   </style>
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
-    
-    // 권한 확인
-    const userRole = parseInt(sessionStorage.getItem('userRole') || 0);
-    const userId = sessionStorage.getItem('userId') || '';
-    const userName = sessionStorage.getItem('userName') || '';
-    
-    const is2ndGrade = userId.length === 4 && userId.startsWith('2');
-    const isAuthorized = is2ndGrade || (userRole >= 32 && userRole <= 46);
-    
-    if (!isAuthorized) {
-      alert("접근 권한이 없습니다. (2학년 및 학생회 전용)");
-      window.location.href = "main.html";
+    const roleNames = { 1: "재학생", 42: "전교 회장", 45: "선생님", 46: "관리자" };
+    let currentRole = 0;
+
+    function initPage() {
+      currentRole = Number(sessionStorage.getItem('userRole')) || 0; 
+      
+      const displayId = document.getElementById('display-id');
+      const roleDisplay = document.getElementById('display-role');
+      const menuContainer = document.getElementById('menu-list-container');
+      const actionBtn = document.getElementById('action-btn');
+
+      // 사이드바 설정 로직
+      if (currentRole === 0) {
+        displayId.innerText = "로그인이 필요합니다.";
+        roleDisplay.innerText = "비회원";
+        roleDisplay.style.backgroundColor = "#A0AEC0";
+        menuContainer.innerHTML = `
+          <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+          <div class="menu-item" onclick="goToPage('mettsi')" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">회의록 게시판</div>
+        `;
+        actionBtn.innerText = "로그인 하러가기";
+        actionBtn.style.backgroundColor = "#7BA4DB";
+        actionBtn.onclick = function() { window.location.href = 'loginh.html'; };
+      } else {
+        displayId.innerText = sessionStorage.getItem('userId');
+        roleDisplay.innerText = roleNames[currentRole] || "권한 미상";
+        roleDisplay.style.backgroundColor = "#82CA9D"; 
+        menuContainer.innerHTML = `
+          <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+          <div class="menu-item" onclick="goToPage('scint')">학생회 조직도</div>
+          <div class="menu-item" onclick="goToPage('mettsi')" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">회의록 게시판</div>
+        `;
+        actionBtn.innerText = "로그아웃";
+        actionBtn.style.backgroundColor = "#F19C99";
+        actionBtn.onclick = logout;
+      }
     }
 
-    function checkDate(element) {
-        const day = new Date(element.value).getDay();
-        // 1:월, 2:화, 4:목, 5:금 (수=3, 토=6, 일=0)
-        if(day === 0 || day === 3 || day === 6) {
-            alert("월, 화, 목, 금요일만 신청 가능합니다.");
-            element.value = '';
-        }
+    function toggleMenu() {
+      const sidebar = document.getElementById("mySidebar");
+      sidebar.style.left = sidebar.style.left === "0px" ? "-280px" : "0px";
     }
-
-    function submitApplication() {
-      const applyDate = document.getElementById('applyDate').value;
-      const timeSlot = document.getElementById('timeSlot').value;
-      const partnerId = document.getElementById('partnerId').value;
-
-      if (!applyDate || !timeSlot || !partnerId) {
-        alert("모든 항목을 입력해주세요."); return;
-      }
-      if (partnerId === userId) {
-        alert("본인의 학번을 파트너로 지정할 수 없습니다."); return;
-      }
-
-      const btn = document.getElementById('submitBtn');
-      btn.innerText = "신청 중...";
-      btn.disabled = true;
-
-      // 구글 앱스 스크립트로 데이터 전송 (action=applyMettsi)
-      fetch(`${API_URL}?action=applyMettsi&userId=${userId}&userName=${encodeURIComponent(userName)}&partnerId=${partnerId}&date=${applyDate}&slot=${timeSlot}`, { redirect: 'follow' })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            alert("신청이 완료되었습니다!");
-            window.location.href = "mettsita.html"; // 확인 페이지로 이동
-          } else {
-            alert("신청 실패: " + data.message); // 예: 정원 초과, 이미 신청함, 시간 아님 등
-            btn.innerText = "신청하기";
-            btn.disabled = false;
-          }
-        }).catch(err => {
-            alert("오류가 발생했습니다.");
-            btn.innerText = "신청하기";
-            btn.disabled = false;
-        });
+    function logout() { if(confirm('로그아웃 하시겠습니까?')) { sessionStorage.clear(); window.location.reload(); } }
+    function goToPage(pageName) { window.location.href = pageName + '.html'; }
+    
+    // 게시글 상세페이지로 이동
+    function viewPost(id) {
+      // sessionStorage 등에 클릭한 게시물 ID를 저장하고 넘어가면 좋습니다.
+      window.location.href = 'mettsita.html?id=' + id;
     }
   </script>
 </head>
-<body>
-  <div class="card">
-    <h2>프로그램 신청</h2>
-    <div class="info-box">
-      - 2인 1조로 신청합니다.<br>
-      - 월, 화, 목, 금요일만 가능합니다.<br>
-      - 각 타임당 선착순 5팀 제한이 있습니다.<br>
-      - 일주일에 1회만 참여 가능합니다.
+<body onload="initPage()">
+
+  <div class="navbar">
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+    <div class="nav-center">
+      <img src="https://drive.google.com/thumbnail?id=1-vFaLyktqvl_ywa0BpiBppSI6lEgsKDd&sz=w200" alt="로고" class="nav-logo">
+      <p class="nav-title">형석고등학교 학생회</p>
     </div>
-
-    <label>신청 날짜 (월, 화, 목, 금)</label>
-    <input type="date" id="applyDate" onchange="checkDate(this)">
-
-    <label>타임 선택</label>
-    <select id="timeSlot">
-      <option value="">타임을 선택하세요</option>
-      <option value="1">1번 타임 (5팀 제한)</option>
-      <option value="2">2번 타임 (5팀 제한)</option>
-    </select>
-
-    <label>짝꿍 학번</label>
-    <input type="text" id="partnerId" placeholder="예: 2101">
-
-    <button id="submitBtn" onclick="submitApplication()">신청하기</button>
-    <button class="back-btn" onclick="window.location.href='main.html'">메인으로 돌아가기</button>
+    <div style="width: 24px;"></div> 
   </div>
+
+  <div id="mySidebar" class="sidebar">
+    <div class="sidebar-header">
+      <button class="close-btn" onclick="toggleMenu()">×</button>
+      <h3 class="user-id-text" id="display-id">ID 로딩중...</h3>
+      <span class="user-role-badge" id="display-role">권한 로딩중...</span>
+    </div>
+    <div class="menu-list" id="menu-list-container"></div>
+    <button id="action-btn" class="action-btn">버튼 로딩중...</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>학생회 회의록 목록</h2>
+      
+      <div class="board-header">
+        <span style="font-size: 14px; color: #A0AEC0;">총 3개의 회의록이 있습니다.</span>
+        <button class="write-btn" onclick="goToPage('mettsitat')">글쓰기</button>
+      </div>
+
+      <table class="board-table">
+        <thead>
+          <tr>
+            <th class="col-id">번호</th>
+            <th class="col-title">제목</th>
+            <th class="col-author">작성자</th>
+            <th class="col-date">작성일</th>
+          </tr>
+        </thead>
+        <tbody id="board-list">
+          <tr onclick="viewPost(3)">
+            <td class="col-id">3</td>
+            <td class="col-title">5월 정기 학생회 회의록</td>
+            <td class="col-author">학생회장</td>
+            <td class="col-date">05-12</td>
+          </tr>
+          <tr onclick="viewPost(2)">
+            <td class="col-id">2</td>
+            <td class="col-title">체육대회 기획안 회의 결과</td>
+            <td class="col-author">건강활동부</td>
+            <td class="col-date">04-28</td>
+          </tr>
+          <tr onclick="viewPost(1)">
+            <td class="col-id">1</td>
+            <td class="col-title">2026학년도 1학기 첫 회의록</td>
+            <td class="col-author">학생부회장</td>
+            <td class="col-date">03-05</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 </body>
 </html>
