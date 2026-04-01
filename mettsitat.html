@@ -121,7 +121,6 @@
                 document.getElementById('startTime').value = startVal;
                 document.getElementById('endTime').value = endVal;
                 
-                // 받아온 요일 세팅
                 document.getElementById('startDate').value = startDateVal;
                 document.getElementById('endDate').value = endDateVal;
                 
@@ -139,7 +138,6 @@
           groups[dayStr][slot].push(row);
       });
 
-      // 요일 순서(월->금)에 맞춰서 정렬
       const sortedDays = Object.keys(groups).sort((a, b) => {
           return (daysOrder[a] || 99) - (daysOrder[b] || 99);
       });
@@ -152,7 +150,7 @@
           sortedDays.forEach(dayStr => {
               html += `<tr style="background-color: #EAF0F6; border-top: 2px solid #CBD5E0;">
                           <td colspan="5" style="text-align: center; font-weight: bold; color: #2D3748; padding: 12px; font-size: 15px;">
-                              📅 ${dayStr}
+                              📅 참여 예정일 : ${dayStr}
                           </td>
                        </tr>`;
 
@@ -180,8 +178,8 @@
     function saveSettings() {
         const start = document.getElementById('startTime').value;
         const end = document.getElementById('endTime').value;
-        const startDate = document.getElementById('startDate').value; // 시작 요일
-        const endDate = document.getElementById('endDate').value; // 마감 요일
+        const startDate = document.getElementById('startDate').value; 
+        const endDate = document.getElementById('endDate').value; 
         const btn = document.getElementById('saveTimeBtn');
         
         if(!start || !end || !startDate || !endDate) {
@@ -194,7 +192,6 @@
             return;
         }
 
-        // 요일 순서 검증
         if((daysOrder[startDate] || 0) > (daysOrder[endDate] || 0)) {
             alert("마감 요일이 시작 요일보다 빠를 수 없습니다.");
             return;
@@ -214,11 +211,11 @@
                 else alert("오류 발생: " + (data.message || "서버에서 저장을 거절했습니다."));
             })
             .catch(error => { alert("서버 통신 중 에러가 발생했습니다."); })
-            .finally(() => { btn.innerText = "설정 저장"; });
+            .finally(() => { btn.innerText = "신청 기간 설정 저장"; });
     }
 
     function adminAdd() {
-        const addDate = document.getElementById('addDate').value; // 요일 선택
+        const addDate = document.getElementById('addDate').value; 
         const slot = document.getElementById('addSlot').value;
         const id1 = document.getElementById('addId1').value;
         const id2 = document.getElementById('addId2').value;
@@ -284,13 +281,14 @@
   <div class="container">
     
     <div class="card">
-      <h3>⏰ 신청 시간 및 📅 요일 설정</h3>
+      <h3>⏰ 신청 폼 접수 기간 설정</h3>
       <p class="info-text" style="margin-bottom: 15px;">
-        * 설정한 요일과 시간 동안만 학생들이 폼을 제출할 수 있습니다.
+        * 학생들이 <b>신청을 할 수 있는(접수 폼이 열리는) 요일과 시간</b>을 지정합니다.<br>
+        * 학생 페이지에서는 이 설정과 무관하게 신청 희망 요일(월, 화, 목, 금)이 모두 표시됩니다.
       </p>
       
       <div class="form-row">
-        <label for="startDate">신청 가능 요일 (시작)</label>
+        <label for="startDate">신청 접수 시작 요일</label>
         <select id="startDate" class="form-control">
           <option value="월요일">월요일</option>
           <option value="화요일">화요일</option>
@@ -300,7 +298,7 @@
         </select>
       </div>
       <div class="form-row">
-        <label for="endDate">신청 가능 요일 (마감)</label>
+        <label for="endDate">신청 접수 마감 요일</label>
         <select id="endDate" class="form-control">
           <option value="월요일">월요일</option>
           <option value="화요일">화요일</option>
@@ -312,16 +310,16 @@
       <hr style="border: 0; border-top: 1px solid #EAF0F6; margin: 20px 0;">
       
       <div class="form-row">
-        <label for="startTime">하루 중 폼 오픈 시간</label>
+        <label for="startTime">폼 오픈 시간</label>
         <input type="text" id="startTime" class="form-control" placeholder="예: 08:30 (24시간제)" maxlength="5" oninput="formatTimeInput(this)">
       </div>
       <div class="form-row">
-        <label for="endTime">하루 중 폼 마감 시간</label>
+        <label for="endTime">폼 마감 시간</label>
         <input type="text" id="endTime" class="form-control" placeholder="예: 18:00 (24시간제)" maxlength="5" oninput="formatTimeInput(this)">
       </div>
       <p class="info-text">* 시간은 숫자만 입력하시면 자동으로 24시간제(HH:MM) 형태로 변환됩니다.</p>
       
-      <button id="saveTimeBtn" class="btn btn-primary" onclick="saveSettings()">위 시간 및 요일 설정 저장하기</button>
+      <button id="saveTimeBtn" class="btn btn-primary" onclick="saveSettings()">신청 기간 설정 저장</button>
     </div>
 
     <div class="card">
@@ -351,7 +349,7 @@
         <table>
           <thead>
             <tr>
-              <th>요일</th>
+              <th>참여 예정일</th>
               <th>시간</th>
               <th>멘토 (학번/이름)</th>
               <th>멘티 (학번/이름)</th>
