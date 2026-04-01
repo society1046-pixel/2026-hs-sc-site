@@ -83,7 +83,6 @@ function initMain() {
         <div class="menu-item" onclick="goToPage('A2')">- 카테고리 2</div>
         <div class="menu-item" onclick="goToPage('A3')">- 카테고리 3</div>
       </div>
-      <div class="menu-item" onclick="goToPage('fage1')">Fage1 메뉴로 이동</div>
     `;
     
     // 하단 버튼을 '로그아웃'으로 변경
