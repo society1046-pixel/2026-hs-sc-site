@@ -61,6 +61,9 @@
     let currentRole = parseInt(sessionStorage.getItem('userRole') || 0);
     const userId = sessionStorage.getItem('userId') || '';
 
+    // 요일 순서 맵핑 객체
+    const daysOrder = { '월요일': 1, '화요일': 2, '수요일': 3, '목요일': 4, '금요일': 5 };
+
     function initPage() {
       if (currentRole !== 45 && currentRole !== 46) {
         alert("선생님 및 관리자 전용 페이지입니다.");
@@ -97,13 +100,17 @@
             if(data.success) {
                 let startVal = data.settings.start ? String(data.settings.start).replace(/'/g, '').trim() : '';
                 let endVal = data.settings.end ? String(data.settings.end).replace(/'/g, '').trim() : '';
-                let startDateVal = data.settings.startDate ? String(data.settings.startDate).trim() : '';
-                let endDateVal = data.settings.endDate ? String(data.settings.endDate).trim() : '';
+                let startDateVal = data.settings.startDate ? String(data.settings.startDate).trim() : '월요일';
+                let endDateVal = data.settings.endDate ? String(data.settings.endDate).trim() : '금요일';
 
                 document.getElementById('startTime').value = startVal;
                 document.getElementById('endTime').value = endVal;
-                document.getElementById('startDate').value = startDateVal;
-                document.getElementById('endDate').value = endDateVal;
+                
+                // 설정된 요일이 옵션에 존재하면 해당 값으로 설정
+                const startDaySelect = document.getElementById('startDay');
+                const endDaySelect = document.getElementById('endDay');
+                if(daysOrder[startDateVal]) startDaySelect.value = startDateVal;
+                if(daysOrder[endDateVal]) endDaySelect.value = endDateVal;
                 
                 renderTable(data.list || []);
             }
@@ -111,34 +118,30 @@
     }
 
     function renderTable(list) {
-      // 관리자 화면에서도 전체 신청 내역을 날짜별로 묶어 보여줍니다.
       const groups = {};
       list.forEach(row => {
-          const dateStr = row[0];
+          const dayStr = row[0]; // 날짜 대신 요일 문자열(예: '월요일')이 들어옴
           const slot = row[1];
-          if(!groups[dateStr]) groups[dateStr] = { 1: [], 2: [] };
-          groups[dateStr][slot].push(row);
+          if(!groups[dayStr]) groups[dayStr] = { 1: [], 2: [] };
+          groups[dayStr][slot].push(row);
       });
 
-      const sortedDates = Object.keys(groups).sort((a, b) => new Date(a) - new Date(b));
-      const daysKor = ['일', '월', '화', '수', '목', '금', '토'];
+      // 요일 순서에 맞춰서 정렬 (월, 화, 수, 목, 금)
+      const sortedDays = Object.keys(groups).sort((a, b) => (daysOrder[a] || 99) - (daysOrder[b] || 99));
       let html = '';
 
-      if (sortedDates.length === 0) {
+      if (sortedDays.length === 0) {
           html = `<tr><td colspan="5" style="color: #A0AEC0; font-size: 13px;">등록된 신청 내역이 없습니다.</td></tr>`;
       } else {
-          sortedDates.forEach(date => {
-              const d = new Date(date);
-              const dayText = isNaN(d) ? '' : ` (${daysKor[d.getDay()]})`;
-
+          sortedDays.forEach(dayStr => {
               html += `<tr style="background-color: #EAF0F6; border-top: 2px solid #CBD5E0;">
                           <td colspan="5" style="text-align: center; font-weight: bold; color: #2D3748; padding: 12px; font-size: 15px;">
-                              📅 ${date}${dayText}
+                              📅 ${dayStr}
                           </td>
                        </tr>`;
 
               [1, 2].forEach(slot => {
-                  const items = groups[date][slot];
+                  const items = groups[dayStr][slot];
                   if (items && items.length > 0) {
                       items.forEach(row => {
                           let slotBadge = slot == 1 ? '<span class="badge-slot1">1교시</span>' : '<span class="badge-slot2">2교시</span>';
@@ -161,23 +164,24 @@
     function saveSettings() {
         const start = document.getElementById('startTime').value;
         const end = document.getElementById('endTime').value;
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
+        const startDay = document.getElementById('startDay').value;
+        const endDay = document.getElementById('endDay').value;
         const btn = document.getElementById('saveTimeBtn');
         
-        if(!start || !end || !startDate || !endDate) {
-            alert("시간과 날짜 항목을 모두 입력해주세요.");
+        if(!start || !end || !startDay || !endDay) {
+            alert("시간과 요일 항목을 모두 입력해주세요.");
             return;
         }
 
-        if(startDate > endDate) {
-            alert("마감 날짜가 시작 날짜보다 빠를 수 없습니다.");
+        // 요일 순서 비교 검증
+        if(daysOrder[startDay] > daysOrder[endDay]) {
+            alert("마감 요일이 시작 요일보다 빠를 수 없습니다.");
             return;
         }
 
         btn.innerText = "저장중...";
         
-        const requestUrl = `${API_URL}?action=setMettsiTime&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&role=${currentRole}`;
+        const requestUrl = `${API_URL}?action=setMettsiTime&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&startDate=${encodeURIComponent(startDay)}&endDate=${encodeURIComponent(endDay)}&role=${currentRole}`;
 
         fetch(requestUrl)
             .then(res => res.json())
@@ -190,17 +194,17 @@
     }
 
     function adminAdd() {
-        const date = document.getElementById('addDate').value;
+        const addDay = document.getElementById('addDay').value;
         const slot = document.getElementById('addSlot').value;
         const id1 = document.getElementById('addId1').value;
         const id2 = document.getElementById('addId2').value;
 
-        if(!date || !slot || !id1 || !id2) { alert('모든 항목을 입력하세요.'); return; }
+        if(!addDay || !slot || !id1 || !id2) { alert('모든 항목을 입력하세요.'); return; }
 
         const btn = document.getElementById('addBtn');
         btn.innerText = "추가중...";
 
-        fetch(`${API_URL}?action=adminAddMettsi&date=${date}&slot=${slot}&id1=${id1}&id2=${id2}`)
+        fetch(`${API_URL}?action=adminAddMettsi&date=${encodeURIComponent(addDay)}&slot=${slot}&id1=${id1}&id2=${id2}`)
             .then(res => res.json())
             .then(data => {
                 if(data.success) {
@@ -256,19 +260,31 @@
   <div class="container">
     
     <div class="card">
-      <h3>⏰ 신청 시간 및 📅 날짜 설정</h3>
+      <h3>⏰ 신청 시간 및 📅 요일 설정</h3>
       <p class="info-text" style="margin-bottom: 15px;">
-        * 설정한 기간(날짜)과 시간 동안만 학생들이 폼을 제출할 수 있습니다.<br>
-        * 예: 이번 주 월요일~금요일로 설정하면, 학생 폼 달력도 월~금까지만 선택 가능합니다.
+        * 설정한 요일과 시간 동안만 학생들이 폼을 제출할 수 있습니다.<br>
+        * 예: 월요일~금요일로 설정하면, 학생 폼에서도 해당 요일만 선택 가능합니다.
       </p>
       
       <div class="form-row">
-        <label for="startDate">신청 가능 시작 날짜</label>
-        <input type="date" id="startDate" class="form-control">
+        <label for="startDay">신청 가능 요일 (시작)</label>
+        <select id="startDay" class="form-control">
+          <option value="월요일">월요일</option>
+          <option value="화요일">화요일</option>
+          <option value="수요일">수요일</option>
+          <option value="목요일">목요일</option>
+          <option value="금요일">금요일</option>
+        </select>
       </div>
       <div class="form-row">
-        <label for="endDate">신청 가능 마감 날짜</label>
-        <input type="date" id="endDate" class="form-control">
+        <label for="endDay">신청 가능 요일 (마감)</label>
+        <select id="endDay" class="form-control">
+          <option value="월요일">월요일</option>
+          <option value="화요일">화요일</option>
+          <option value="수요일">수요일</option>
+          <option value="목요일">목요일</option>
+          <option value="금요일">금요일</option>
+        </select>
       </div>
       <hr style="border: 0; border-top: 1px solid #EAF0F6; margin: 20px 0;">
       <div class="form-row">
@@ -279,13 +295,19 @@
         <label for="endTime">하루 중 폼 마감 시간</label>
         <input type="time" id="endTime" class="form-control">
       </div>
-      <button id="saveTimeBtn" class="btn btn-primary" onclick="saveSettings()">위 시간 및 날짜 설정 저장하기</button>
+      <button id="saveTimeBtn" class="btn btn-primary" onclick="saveSettings()">위 시간 및 요일 설정 저장하기</button>
     </div>
 
     <div class="card">
       <h3>학생 강제 추가 (관리자 권한)</h3>
       <div class="form-row">
-        <input type="date" id="addDate" class="form-control">
+        <select id="addDay" class="form-control">
+          <option value="월요일">월요일</option>
+          <option value="화요일">화요일</option>
+          <option value="수요일">수요일</option>
+          <option value="목요일">목요일</option>
+          <option value="금요일">금요일</option>
+        </select>
         <select id="addSlot" class="form-control">
           <option value="1">1교시</option>
           <option value="2">2교시</option>
@@ -303,7 +325,7 @@
         <table>
           <thead>
             <tr>
-              <th>날짜</th>
+              <th>요일</th>
               <th>시간</th>
               <th>멘토 (학번/이름)</th>
               <th>멘티 (학번/이름)</th>
