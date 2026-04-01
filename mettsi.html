@@ -60,22 +60,51 @@
       window.location.href = "main.html";
     }
 
+    // 서버에서 설정된 요일을 불러와 드롭다운 옵션을 생성합니다.
     function loadServerSettingsAndSetDate() {
       fetch(`${API_URL}?action=getMettsiAdminData`)
         .then(res => res.json())
         .then(data => {
-            const dateInput = document.getElementById('applyDate');
+            const dateSelect = document.getElementById('applyDate');
+            const daysOrder = ['월요일', '화요일', '수요일', '목요일', '금요일'];
+            
             if(data.success && data.settings.startDate && data.settings.endDate) {
-                // 관리자가 설정한 날짜 범위를 달력에 적용
-                dateInput.min = data.settings.startDate;
-                dateInput.max = data.settings.endDate;
-                document.getElementById('date-help-text').innerText = `* 신청 가능 날짜: ${data.settings.startDate} ~ ${data.settings.endDate}`;
-                document.getElementById('date-help-text').style.color = "#7BA4DB";
+                let startIdx = daysOrder.indexOf(data.settings.startDate);
+                let endIdx = daysOrder.indexOf(data.settings.endDate);
+                
+                if (startIdx !== -1 && endIdx !== -1 && startIdx <= endIdx) {
+                    let optionsHtml = '<option value="">요일을 선택하세요</option>';
+                    for (let i = startIdx; i <= endIdx; i++) {
+                        // 기존 규칙에 따라 수요일은 목록에서 제외합니다.
+                        if (daysOrder[i] === '수요일') continue; 
+                        optionsHtml += `<option value="${daysOrder[i]}">${daysOrder[i]}</option>`;
+                    }
+                    dateSelect.innerHTML = optionsHtml;
+                    document.getElementById('date-help-text').innerText = `* 신청 가능 요일: ${data.settings.startDate} ~ ${data.settings.endDate} (수요일 제외)`;
+                    document.getElementById('date-help-text').style.color = "#7BA4DB";
+                } else {
+                    setDefaultDays(dateSelect);
+                }
             } else {
-                document.getElementById('date-help-text').innerText = "* 현재 설정된 날짜 제한이 없습니다. 자유롭게 선택하세요.";
+                setDefaultDays(dateSelect);
             }
         })
-        .catch(err => console.error("서버 설정 불러오기 실패:", err));
+        .catch(err => {
+            console.error("서버 설정 불러오기 실패:", err);
+            setDefaultDays(document.getElementById('applyDate'));
+        });
+    }
+
+    // 서버 설정을 불러오지 못했을 때의 기본 옵션
+    function setDefaultDays(selectElement) {
+        selectElement.innerHTML = `
+            <option value="">요일을 선택하세요</option>
+            <option value="월요일">월요일</option>
+            <option value="화요일">화요일</option>
+            <option value="목요일">목요일</option>
+            <option value="금요일">금요일</option>
+        `;
+        document.getElementById('date-help-text').innerText = "* 현재 서버 요일 제한을 확인할 수 없습니다. (수요일 제외)";
     }
 
     function initPage() {
@@ -108,21 +137,6 @@
       loadServerSettingsAndSetDate();
     }
 
-    function checkDate(element) {
-        if (element.readOnly) return; 
-
-        const [year, month, day] = element.value.split('-');
-        if (!year || !month || !day) return;
-
-        const selectedDate = new Date(year, month - 1, day);
-        const dayOfWeek = selectedDate.getDay();
-        
-        if(dayOfWeek === 0 || dayOfWeek === 3 || dayOfWeek === 6) {
-            alert("월, 화, 목, 금요일만 신청 가능합니다. (수요일, 주말 제외)");
-            element.value = '';
-        }
-    }
-
     function submitApplication() {
       const applyDate = document.getElementById('applyDate').value;
       const timeSlot = document.getElementById('timeSlot').value;
@@ -140,7 +154,7 @@
       btn.innerText = "신청 중...";
       btn.disabled = true;
 
-      const requestUrl = `${API_URL}?action=applyMettsi&userId=${userId}&userName=${encodeURIComponent(userName)}&partnerId=${encodeURIComponent(partnerId)}&date=${applyDate}&slot=${timeSlot}`;
+      const requestUrl = `${API_URL}?action=applyMettsi&userId=${userId}&userName=${encodeURIComponent(userName)}&partnerId=${encodeURIComponent(partnerId)}&date=${encodeURIComponent(applyDate)}&slot=${timeSlot}`;
 
       fetch(requestUrl, { redirect: 'follow' })
         .then(res => res.json())
@@ -201,8 +215,10 @@
       </div>
 
       <div class="form-group">
-        <label for="applyDate">신청 날짜</label>
-        <input type="date" id="applyDate" class="form-control" onchange="checkDate(this)">
+        <label for="applyDate">신청 요일</label>
+        <select id="applyDate" class="form-control">
+          <option value="">데이터를 불러오는 중...</option>
+        </select>
         <div id="date-help-text" style="font-size: 13px; margin-top: 5px; font-weight: bold;"></div>
       </div>
 
