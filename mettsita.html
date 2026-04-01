@@ -6,9 +6,7 @@
   <title>형석고등학교 학생회 - 신청 현황</title>
   
   <style>
-    /* ---------------------------------------------------
-       1. 공통 디자인 시스템 (네비게이션 바, 사이드바 등) 
-       --------------------------------------------------- */
+    /* 공통 CSS 유지 */
     body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
     .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; padding: 0; }
@@ -26,27 +24,26 @@
     .menu-item:hover { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; }
     .action-btn { margin: 20px; padding: 12px 20px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); transition: 0.2s; }
     
-    /* ---------------------------------------------------
-       2. 현황판(테이블) 전용 디자인
-       --------------------------------------------------- */
+    /* 테이블 CSS 추가 변경 (5번째 열 대응) */
     .container { max-width: 800px; margin: 40px auto; padding: 0 15px; }
     .card { background: white; padding: 40px 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; }
     .card h2 { margin-top: 0; color: #2D3748; border-bottom: 2px solid #F4F7FB; padding-bottom: 15px; margin-bottom: 25px; text-align: center; }
 
-    /* 테이블 디자인 */
     .table-responsive { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; text-align: center; white-space: nowrap; }
-    th { background-color: #7BA4DB; color: white; padding: 14px 12px; font-weight: bold; }
+    th { background-color: #7BA4DB; color: white; padding: 14px 10px; font-weight: bold; }
     th:first-child { border-top-left-radius: 8px; }
     th:last-child { border-top-right-radius: 8px; }
-    td { padding: 14px 12px; border-bottom: 1px solid #EAF0F6; color: #4A5568; }
+    td { padding: 14px 10px; border-bottom: 1px solid #EAF0F6; color: #4A5568; }
     tr:hover td { background-color: #FAFCFF; }
     
-    /* 뱃지 디자인 */
     .badge-slot1 { background-color: #F6AD55; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
     .badge-slot2 { background-color: #82CA9D; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
     
-    /* 하단 버튼 디자인 */
+    /* 본인 취소 버튼 디자인 */
+    .btn-cancel-sm { background-color: #F19C99; color: white; border: none; border-radius: 4px; padding: 6px 10px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; }
+    .btn-cancel-sm:hover { background-color: #E57D7A; }
+
     .btn-group { display: flex; gap: 10px; margin-top: 30px; justify-content: center; flex-wrap: wrap; }
     .btn-primary { background-color: #7BA4DB; color: white; border: none; padding: 14px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; text-decoration: none; transition: 0.2s; text-align: center; }
     .btn-primary:hover { background-color: #638CBE; }
@@ -99,93 +96,85 @@
       loadApplications();
     }
 
-    // 이번 주 월, 화, 목, 금 날짜 계산 함수
-    function getThisWeekDays() {
-      const today = new Date();
-      const dayOfWeek = today.getDay();
-      const distanceToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-      const monday = new Date(today);
-      monday.setDate(today.getDate() + distanceToMonday);
-
-      const days = [];
-      // 0:월, 1:화, 3:목, 4:금
-      [0, 1, 3, 4].forEach(offset => {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + offset);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        days.push(`${yyyy}-${mm}-${dd}`);
-      });
-      return days;
-    }
-
     function loadApplications() {
-      document.getElementById('table-body').innerHTML = "<tr><td colspan='4'>데이터를 불러오는 중입니다...</td></tr>";
+      document.getElementById('table-body').innerHTML = "<tr><td colspan='5'>데이터를 불러오는 중입니다...</td></tr>";
       
       fetch(`${API_URL}?action=getMettsiData`)
         .then(res => res.json())
         .then(data => {
           const list = data.list || [];
-          const thisWeekTargetDates = getThisWeekDays();
-          
-          // 1. 기본적으로 이번 주 월, 화, 목, 금 뼈대 생성
           const groups = {};
-          thisWeekTargetDates.forEach(date => {
-             groups[date] = { 1: [], 2: [] };
-          });
-
-          // 2. 서버에서 받아온 데이터를 그룹에 분류
+          
           list.forEach(row => {
             const dateStr = row[0];
             const slot = row[1];
-            if (!groups[dateStr]) groups[dateStr] = { 1: [], 2: [] }; // 이번 주 외의 데이터가 있을 경우 대비
+            if (!groups[dateStr]) groups[dateStr] = { 1: [], 2: [] }; 
             groups[dateStr][slot].push(row);
           });
 
-          // 3. 날짜 순으로 정렬하여 HTML 생성
           const sortedDates = Object.keys(groups).sort((a, b) => new Date(a) - new Date(b));
           const daysKor = ['일', '월', '화', '수', '목', '금', '토'];
           let html = '';
 
-          sortedDates.forEach(date => {
-            const d = new Date(date);
-            const dayText = isNaN(d) ? '' : ` (${daysKor[d.getDay()]})`;
+          if (sortedDates.length === 0) {
+             html = `<tr><td colspan="5" style="color: #A0AEC0; font-size: 13px;">현재 신청 내역이 없습니다.</td></tr>`;
+          } else {
+              sortedDates.forEach(date => {
+                const d = new Date(date);
+                const dayText = isNaN(d) ? '' : ` (${daysKor[d.getDay()]})`;
 
-            // 날짜별 헤더 (구분선 역할)
-            html += `<tr style="background-color: #EAF0F6; border-top: 2px solid #CBD5E0;">
-                        <td colspan="4" style="text-align: center; font-weight: bold; color: #2D3748; padding: 12px; font-size: 15px;">
-                            📅 ${date}${dayText}
-                        </td>
-                     </tr>`;
+                html += `<tr style="background-color: #EAF0F6; border-top: 2px solid #CBD5E0;">
+                            <td colspan="5" style="text-align: center; font-weight: bold; color: #2D3748; padding: 12px; font-size: 15px;">
+                                📅 ${date}${dayText}
+                            </td>
+                         </tr>`;
 
-            let hasData = false;
+                [1, 2].forEach(slot => {
+                  const items = groups[date][slot];
+                  if (items && items.length > 0) {
+                    items.forEach(row => {
+                      let slotBadge = slot == 1 ? '<span class="badge-slot1">1교시</span>' : '<span class="badge-slot2">2교시</span>';
+                      let cancelHtml = '-';
+                      
+                      // 내 학번이 포함되어 있다면 취소 버튼 생성
+                      if (String(row[2]) === userId || String(row[4]) === userId) {
+                          cancelHtml = `<button class="btn-cancel-sm" onclick="cancelMyApplication(${row[6]})">취소</button>`;
+                      }
 
-            // 1타임, 2타임 순서대로 출력
-            [1, 2].forEach(slot => {
-              const items = groups[date][slot];
-              if (items && items.length > 0) {
-                hasData = true;
-                items.forEach(row => {
-                  let slotBadge = slot == 1 ? '<span class="badge-slot1">1교시</span>' : '<span class="badge-slot2">2교시</span>';
-                  html += `<tr>
-                            <td>${row[0]}</td>
-                            <td>${slotBadge}</td>
-                            <td>${row[2]} ${row[3]}</td>
-                            <td>${row[4]} ${row[5]}</td>
-                           </tr>`;
+                      html += `<tr>
+                                  <td>${row[0]}</td>
+                                  <td>${slotBadge}</td>
+                                  <td>${row[2]} ${row[3]}</td>
+                                  <td>${row[4]} ${row[5]}</td>
+                                  <td>${cancelHtml}</td>
+                               </tr>`;
+                    });
+                  }
                 });
-              }
-            });
-
-            // 해당 날짜에 데이터가 아예 없으면 빈칸 안내 표시
-            if (!hasData) {
-                html += `<tr><td colspan="4" style="color: #A0AEC0; font-size: 13px;">신청 내역이 없습니다.</td></tr>`;
-            }
-          });
+              });
+          }
 
           document.getElementById('table-body').innerHTML = html;
         });
+    }
+
+    // ★ 본인 신청 내역 취소 기능
+    function cancelMyApplication(rowIndex) {
+        if(!confirm("해당 신청 내역을 정말 취소하시겠습니까?")) return;
+        
+        const requestUrl = `${API_URL}?action=userDeleteMettsi&rowIndex=${rowIndex}&userId=${userId}`;
+
+        fetch(requestUrl)
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert("성공적으로 취소되었습니다.");
+                    loadApplications(); // 표 새로고침
+                } else {
+                    alert("취소 실패: " + data.message);
+                }
+            })
+            .catch(error => alert("서버 통신 중 에러가 발생했습니다."));
     }
 
     function toggleMenu() {
@@ -219,7 +208,7 @@
 
   <div class="container">
     <div class="card">
-      <h2>이번 주 신청 현황</h2>
+      <h2>전체 신청 현황</h2>
       
       <div class="table-responsive">
         <table>
@@ -229,6 +218,7 @@
               <th>시간</th>
               <th>멘토</th>
               <th>멘티</th>
+              <th>관리</th>
             </tr>
           </thead>
           <tbody id="table-body">
