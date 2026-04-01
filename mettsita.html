@@ -110,6 +110,15 @@
 
       loadApplications();
     }
+    function toggleMenu() {
+      const sidebar = document.getElementById("mySidebar");
+      sidebar.style.left = sidebar.style.left === "0px" ? "-280px" : "0px";
+    }
+
+    function toggleSubMenu(menuId) { //토글메뉴
+      const subMenu = document.getElementById(menuId);
+      subMenu.classList.toggle('show');
+    }
 
     // ★ 현재 주(Week)의 날짜를 계산하는 함수 추가
     function getWeekDateMapping() {
