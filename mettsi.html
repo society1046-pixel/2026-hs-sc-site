@@ -6,9 +6,7 @@
   <title>형석고등학교 학생회 - 멘토멘티 신청</title>
   
   <style>
-    /* ---------------------------------------------------
-       1. 공통 디자인 시스템 (네비게이션 바, 사이드바 등) 
-       --------------------------------------------------- */
+    /* 공통 CSS 유지 */
     body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
     .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; padding: 0; }
@@ -26,25 +24,18 @@
     .menu-item:hover { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; }
     .action-btn { margin: 20px; padding: 12px 20px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); transition: 0.2s; }
     
-    /* ---------------------------------------------------
-       2. 메인 컨텐츠 및 폼(신청서) 전용 디자인
-       --------------------------------------------------- */
     .container { max-width: 500px; margin: 40px auto; padding: 0 15px; }
     .card { background: white; padding: 40px 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; }
     .card h2 { margin-top: 0; color: #2D3748; border-bottom: 2px solid #F4F7FB; padding-bottom: 15px; margin-bottom: 25px; text-align: center; }
 
-    /* 안내 문구 박스 */
     .info-box { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; padding: 15px; border-radius: 4px; font-size: 14px; margin-bottom: 25px; color: #4A5568; line-height: 1.6; }
     
-    /* 입력 폼 디자인 */
     .form-group { margin-bottom: 20px; }
     .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #2D3748; font-size: 14px; }
     .form-control { width: 100%; padding: 12px; border: 1px solid #CBD5E0; border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; transition: border-color 0.2s; outline: none; background-color: white;}
     .form-control:focus { border-color: #7BA4DB; box-shadow: 0 0 0 2px rgba(123, 164, 219, 0.2); }
-    /* 읽기 전용 입력창 스타일 (잠금 상태일 때) */
     .form-control[readonly] { background-color: #EAF0F6; cursor: not-allowed; color: #718096; }
     
-    /* 하단 버튼 디자인 */
     .form-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 30px; }
     .btn-submit { background-color: #7BA4DB; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; width: 100%; }
     .btn-submit:hover { background-color: #638CBE; }
@@ -54,9 +45,6 @@
   </style>
 
   <script>
-    // ==========================================
-    // 기존 기능 및 API 스크립트 영역
-    // ==========================================
     const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
     
     const roleNames = { 1: "재학생", 42: "전교 회장", 45: "선생님", 46: "관리자" };
@@ -64,11 +52,6 @@
     const userId = sessionStorage.getItem('userId') || '';
     const userName = sessionStorage.getItem('userName') || '';
     
-    // 현재 모드를 저장할 변수 추가
-    let currentApplyMode = 'week'; 
-    let todayStringForCheck = '';
-
-    // 권한 확인 로직
     const is2ndGrade = userId.length === 4 && userId.startsWith('2');
     const isAuthorized = is2ndGrade || (currentRole >= 32 && currentRole <= 46);
     
@@ -81,60 +64,18 @@
       fetch(`${API_URL}?action=getMettsiAdminData`)
         .then(res => res.json())
         .then(data => {
-            if(data.success) {
-                const mode = data.settings.mode || 'week';
-                applyDateLimitsByMode(mode);
+            const dateInput = document.getElementById('applyDate');
+            if(data.success && data.settings.startDate && data.settings.endDate) {
+                // 관리자가 설정한 날짜 범위를 달력에 적용
+                dateInput.min = data.settings.startDate;
+                dateInput.max = data.settings.endDate;
+                document.getElementById('date-help-text').innerText = `* 신청 가능 날짜: ${data.settings.startDate} ~ ${data.settings.endDate}`;
+                document.getElementById('date-help-text').style.color = "#7BA4DB";
             } else {
-                applyDateLimitsByMode('week');
+                document.getElementById('date-help-text').innerText = "* 현재 설정된 날짜 제한이 없습니다. 자유롭게 선택하세요.";
             }
         })
-        .catch(err => {
-            console.error("서버 설정 불러오기 실패:", err);
-            applyDateLimitsByMode('week'); 
-        });
-    }
-
-    function applyDateLimitsByMode(mode) {
-      currentApplyMode = mode; // 현재 모드 저장
-      const dateInput = document.getElementById('applyDate');
-      const todayDate = new Date();
-      
-      const formatDate = (date) => {
-        const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, '0');
-        const dd = String(date.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
-      };
-
-      todayStringForCheck = formatDate(todayDate);
-
-      if (mode === 'today') {
-        // [당일 모드] 오늘 날짜 강제 입력 후 수정 불가능하게 잠금
-        dateInput.value = todayStringForCheck;
-        dateInput.min = todayStringForCheck;
-        dateInput.max = todayStringForCheck;
-        dateInput.readOnly = true; // 수정 금지 (달력 안 뜸)
-        
-        // 당일 모드 안내 문구 표시 (선택사항)
-        document.getElementById('date-help-text').innerText = "* 당일에만 신청 가능하므로, 날짜가 고정되었습니다.";
-        document.getElementById('date-help-text').style.color = "#E53E3E";
-      } else {
-        // [일주일 모드] 잠금 해제 및 주간 범위 설정
-        dateInput.readOnly = false;
-        document.getElementById('date-help-text').innerText = "";
-
-        const dayOfWeek = todayDate.getDay();
-        let distanceToMonday = (dayOfWeek === 0) ? 1 : (dayOfWeek === 6 ? 2 : 1 - dayOfWeek);
-        
-        const monday = new Date(todayDate);
-        monday.setDate(todayDate.getDate() + distanceToMonday);
-
-        const friday = new Date(monday);
-        friday.setDate(monday.getDate() + 4); 
-
-        dateInput.min = formatDate(monday);
-        dateInput.max = formatDate(friday);
-      }
+        .catch(err => console.error("서버 설정 불러오기 실패:", err));
     }
 
     function initPage() {
@@ -168,7 +109,6 @@
     }
 
     function checkDate(element) {
-        // 읽기 전용(당일 모드)일 때는 체크 무시
         if (element.readOnly) return; 
 
         const [year, month, day] = element.value.split('-');
@@ -191,12 +131,6 @@
       if (!applyDate || !timeSlot || !partnerId) {
         alert("모든 항목을 입력해주세요."); return;
       }
-      
-      // 당일 모드일 경우 제출 시 한 번 더 강력하게 검증
-      if (currentApplyMode === 'today' && applyDate !== todayStringForCheck) {
-        alert("현재 당일 신청만 가능합니다. 날짜를 확인해주세요.");
-        return;
-      }
 
       if (partnerId === userId) {
         alert("본인의 학번을 파트너로 지정할 수 없습니다."); return;
@@ -207,13 +141,9 @@
       btn.disabled = true;
 
       const requestUrl = `${API_URL}?action=applyMettsi&userId=${userId}&userName=${encodeURIComponent(userName)}&partnerId=${encodeURIComponent(partnerId)}&date=${applyDate}&slot=${timeSlot}`;
-      console.log("전송 요청 URL:", requestUrl);
 
       fetch(requestUrl, { redirect: 'follow' })
-        .then(res => {
-            if (!res.ok) throw new Error("서버 네트워크 응답 에러");
-            return res.json();
-        })
+        .then(res => res.json())
         .then(data => {
           if (data.success) {
             alert("신청이 완료되었습니다!");
@@ -224,8 +154,7 @@
             btn.disabled = false;
           }
         }).catch(err => {
-            console.error("Fetch 통신 에러:", err);
-            alert("서버와 통신 중 오류가 발생했습니다. 앱스 스크립트 코드나 네트워크 상태를 확인해주세요.");
+            alert("서버와 통신 중 오류가 발생했습니다.");
             btn.innerText = "신청하기";
             btn.disabled = false;
         });
@@ -274,7 +203,7 @@
       <div class="form-group">
         <label for="applyDate">신청 날짜</label>
         <input type="date" id="applyDate" class="form-control" onchange="checkDate(this)">
-        <div id="date-help-text" style="font-size: 12px; margin-top: 5px; font-weight: bold;"></div>
+        <div id="date-help-text" style="font-size: 13px; margin-top: 5px; font-weight: bold;"></div>
       </div>
 
       <div class="form-group">
