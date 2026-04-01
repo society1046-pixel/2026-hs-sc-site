@@ -60,83 +60,56 @@
       window.location.href = "main.html";
     }
 
-    // ★ 추가된 함수: 현재 날짜를 기준으로 이번 주(월~금)의 날짜(MM/DD)를 계산합니다.
-    function getWeekDateMap() {
-      const today = new Date();
-      const dayOfWeek = today.getDay(); // 0:일, 1:월, ..., 6:토
-      
-      // 주말(토, 일)인 경우 다음 주 월요일을 기준으로 계산하도록 조정
-      if (dayOfWeek === 6) today.setDate(today.getDate() + 2);
-      if (dayOfWeek === 0) today.setDate(today.getDate() + 1);
-
-      // 이번 주 월요일 찾기
-      const distanceToMonday = 1 - today.getDay();
-      const monday = new Date(today);
-      monday.setDate(today.getDate() + distanceToMonday);
-
-      const dateMap = {};
-      const days = ['월요일', '화요일', '수요일', '목요일', '금요일'];
-      
-      for (let i = 0; i < 5; i++) {
-        let targetDate = new Date(monday);
-        targetDate.setDate(monday.getDate() + i);
-        dateMap[days[i]] = `${targetDate.getMonth() + 1}/${targetDate.getDate()}`; // "M/D" 형식
-      }
-      return dateMap;
-    }
-
-    // 서버에서 설정된 요일을 불러와 드롭다운 옵션을 생성합니다.
+    // 서버에서 설정된 날짜(시작일~마감일)를 불러와 드롭다운 옵션을 생성합니다.
     function loadServerSettingsAndSetDate() {
-      const dateMap = getWeekDateMap(); // 요일별 날짜 정보 가져오기
-
       fetch(`${API_URL}?action=getMettsiAdminData`)
         .then(res => res.json())
         .then(data => {
             const dateSelect = document.getElementById('applyDate');
-            const daysOrder = ['월요일', '화요일', '수요일', '목요일', '금요일'];
+            const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
             
             if(data.success && data.settings.startDate && data.settings.endDate) {
-                let startIdx = daysOrder.indexOf(data.settings.startDate);
-                let endIdx = daysOrder.indexOf(data.settings.endDate);
+                const start = new Date(data.settings.startDate);
+                const end = new Date(data.settings.endDate);
                 
-                if (startIdx !== -1 && endIdx !== -1 && startIdx <= endIdx) {
-                    let optionsHtml = '<option value="">요일을 선택하세요</option>';
-                    for (let i = startIdx; i <= endIdx; i++) {
-                        // 기존 규칙에 따라 수요일은 목록에서 제외합니다.
-                        if (daysOrder[i] === '수요일') continue; 
+                // 유효한 날짜인지, 시작일이 마감일보다 앞서는지 확인
+                if (!isNaN(start) && !isNaN(end) && start <= end) {
+                    let optionsHtml = '<option value="">날짜를 선택하세요</option>';
+                    let currentDate = new Date(start);
+                    
+                    // 시작일부터 마감일까지 하루씩 더해가며 옵션 생성
+                    while(currentDate <= end) {
+                        const dayOfWeek = currentDate.getDay();
                         
-                        let dayName = daysOrder[i];
-                        let dateString = dateMap[dayName]; // 예: "4/1"
-                        
-                        // 화면에는 "월요일 (4/1)" 처럼 보이지만, 서버로 보내는 value는 "월요일"로 유지
-                        optionsHtml += `<option value="${dayName}">${dayName} (${dateString})</option>`;
+                        // 기존 규칙: 수요일(3) 제외, 그리고 주말(0, 6)도 기본적으로 제외
+                        if (dayOfWeek !== 3 && dayOfWeek !== 0 && dayOfWeek !== 6) { 
+                            const yyyy = currentDate.getFullYear();
+                            const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
+                            const dd = String(currentDate.getDate()).padStart(2, '0');
+                            
+                            const dateString = `${yyyy}-${mm}-${dd}`; // 서버에 저장될 실제 값 (예: 2024-04-15)
+                            const displayString = `${mm}/${dd} (${dayNames[dayOfWeek]})`; // 학생들에게 보여질 값 (예: 04/15 (월))
+                            
+                            optionsHtml += `<option value="${dateString}">${displayString}</option>`;
+                        }
+                        currentDate.setDate(currentDate.getDate() + 1);
                     }
+                    
                     dateSelect.innerHTML = optionsHtml;
-                    document.getElementById('date-help-text').innerText = `* 신청 가능 요일: ${data.settings.startDate} ~ ${data.settings.endDate} (수요일 제외)`;
+                    document.getElementById('date-help-text').innerText = `* 신청 가능 기간: ${data.settings.startDate} ~ ${data.settings.endDate} (수요일 제외)`;
                     document.getElementById('date-help-text').style.color = "#7BA4DB";
                 } else {
-                    setDefaultDays(dateSelect, dateMap);
+                    dateSelect.innerHTML = '<option value="">관리자가 날짜를 아직 설정하지 않았습니다.</option>';
+                    document.getElementById('date-help-text').innerText = "서버 날짜 설정 오류";
                 }
             } else {
-                setDefaultDays(dateSelect, dateMap);
+                dateSelect.innerHTML = '<option value="">데이터를 불러올 수 없습니다.</option>';
             }
         })
         .catch(err => {
             console.error("서버 설정 불러오기 실패:", err);
-            setDefaultDays(document.getElementById('applyDate'), getWeekDateMap());
+            document.getElementById('applyDate').innerHTML = '<option value="">서버 통신 실패</option>';
         });
-    }
-
-    // 서버 설정을 불러오지 못했을 때의 기본 옵션 (날짜 포함)
-    function setDefaultDays(selectElement, dateMap) {
-        selectElement.innerHTML = `
-            <option value="">요일을 선택하세요</option>
-            <option value="월요일">월요일 (${dateMap['월요일']})</option>
-            <option value="화요일">화요일 (${dateMap['화요일']})</option>
-            <option value="목요일">목요일 (${dateMap['목요일']})</option>
-            <option value="금요일">금요일 (${dateMap['금요일']})</option>
-        `;
-        document.getElementById('date-help-text').innerText = "* 현재 서버 요일 제한을 확인할 수 없습니다. (수요일 제외)";
     }
 
     function initPage() {
@@ -164,9 +137,10 @@
         actionBtn.innerText = "로그아웃";
         actionBtn.style.backgroundColor = "#F19C99";
         actionBtn.onclick = logout;
+        
+        // 로그인 된 경우에만 날짜 불러오기 실행
+        loadServerSettingsAndSetDate();
       }
-
-      loadServerSettingsAndSetDate();
     }
 
     function submitApplication() {
@@ -193,7 +167,7 @@
         .then(data => {
           if (data.success) {
             alert("신청이 완료되었습니다!");
-            window.location.href = "mettsita.html";
+            window.location.href = "mettsita.html"; // 명단 확인 페이지로 이동 (필요시 파일명 수정)
           } else {
             alert("신청 실패: " + (data.message || "원인 불명"));
             btn.innerText = "신청하기";
@@ -247,7 +221,7 @@
       </div>
 
       <div class="form-group">
-        <label for="applyDate">신청 요일</label>
+        <label for="applyDate">신청 날짜</label>
         <select id="applyDate" class="form-control">
           <option value="">데이터를 불러오는 중...</option>
         </select>
