@@ -104,6 +104,16 @@
       loadAdminData();
     }
 
+    function toggleMenu() {
+      const sidebar = document.getElementById("mySidebar");
+      sidebar.style.left = sidebar.style.left === "0px" ? "-280px" : "0px";
+    }
+
+    function toggleSubMenu(menuId) { //토글메뉴
+      const subMenu = document.getElementById(menuId);
+      subMenu.classList.toggle('show');
+    }
+
     // ★ 현재 주(Week)의 날짜를 계산하는 함수
     function getWeekDateMapping() {
         const now = new Date();
@@ -326,7 +336,7 @@
   <div class="container">
     
     <div class="card">
-      <h3>신청 폼 접수 기간 설정</h3>
+      <h3>⏰ 신청 폼 접수 기간 설정</h3>
       <p class="info-text" style="margin-bottom: 15px;">
         * 학생들이 <b>신청을 할 수 있는(접수 폼이 열리는) 요일과 시간</b>을 지정합니다.<br>
         * 학생 페이지에서는 이 설정과 무관하게 신청 희망 요일(월, 화, 목, 금)이 모두 표시됩니다.
@@ -389,7 +399,7 @@
     </div>
 
     <div class="card">
-      <h3>신청자 전체 명단 관리</h3>
+      <h3>📋 신청자 전체 명단 관리</h3>
       <div class="table-responsive">
         <table>
           <thead>
