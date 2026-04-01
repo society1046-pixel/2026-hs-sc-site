@@ -133,10 +133,25 @@
       } else {
         displayId.innerText = userId;
         roleDisplay.innerText = roleNames[currentRole] || "권한 확인 됨";
-        roleDisplay.style.backgroundColor = "#82CA9D"; 
+        roleDisplay.style.backgroundColor = "#82CA9D";
+        
         menuContainer.innerHTML = `
           <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
-          <div class="menu-item" onclick="goToPage('scint')">학생회 조직도</div>
+          <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
+          <div class="menu-item" onclick="toggleSubMenu('mett')">2학년부 멘토멘티(이음의 '도약') ▼</div>
+          <div id="mett" class="sub-menu">
+            <div class="menu-item" onclick="goToPage('mettsi')">- 신청</div>
+            <div class="menu-item" onclick="goToPage('mettsita')">- 신청 명단</div>
+            <div class="menu-item" onclick="goToPage('mettsitat')">- 신청 명단(선생님용)</div>
+          </div>
+          
+          <div class="menu-item" onclick="toggleSubMenu('studentCouncilMenu')">학생회 ▼</div>
+          <div id="studentCouncilMenu" class="sub-menu">
+            <div class="menu-item" onclick="checkPinAndGo('sp1')">- 회장단</div>
+            <div class="menu-item" onclick="goToPage('A2')">- 카테고리 2</div>
+            <div class="menu-item" onclick="goToPage('A3')">- 카테고리 3</div>
+          </div>
+          <div class="menu-item" onclick="goToPage('fage1')">Fage1 메뉴로 이동</div>
         `;
         actionBtn.innerText = "로그아웃";
         actionBtn.style.backgroundColor = "#F19C99";
