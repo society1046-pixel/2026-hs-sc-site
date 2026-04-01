@@ -61,7 +61,6 @@
     let currentRole = parseInt(sessionStorage.getItem('userRole') || 0);
     const userId = sessionStorage.getItem('userId') || '';
 
-    // 요일 순서 지정을 위한 매핑 (월~금)
     const daysOrder = { '월요일': 1, '화요일': 2, '수요일': 3, '목요일': 4, '금요일': 5 };
 
     function initPage() {
@@ -91,7 +90,31 @@
       loadAdminData();
     }
 
-    // 24시간제 시간 입력 자동 포맷팅
+    // ★ 현재 주(Week)의 날짜를 계산하는 함수 추가
+    function getWeekDateMapping() {
+        const now = new Date();
+        const currentDay = now.getDay(); 
+        
+        let diffToMonday = currentDay === 0 ? -6 : 1 - currentDay; 
+        if (currentDay === 6) diffToMonday = 2; 
+        if (currentDay === 0) diffToMonday = 1; 
+        
+        const monday = new Date(now);
+        monday.setDate(now.getDate() + diffToMonday);
+        
+        const mapping = {};
+        const days = ['월요일', '화요일', '수요일', '목요일', '금요일'];
+        
+        for (let i = 0; i < 5; i++) {
+            let targetDate = new Date(monday);
+            targetDate.setDate(monday.getDate() + i);
+            let m = targetDate.getMonth() + 1;
+            let d = targetDate.getDate();
+            mapping[days[i]] = `${m}월 ${d}일`; 
+        }
+        return mapping;
+    }
+
     function formatTimeInput(target) {
       let val = target.value.replace(/[^0-9]/g, ''); 
       if (val.length > 2) {
@@ -100,7 +123,6 @@
       target.value = val;
     }
 
-    // 24시간제 유효성 검사
     function isValidTime(timeStr) {
       const regex = /^([01][0-9]|2[0-3]):([0-5][0-9])$/;
       return regex.test(timeStr);
@@ -132,7 +154,7 @@
     function renderTable(list) {
       const groups = {};
       list.forEach(row => {
-          const dayStr = row[0]; // 요일 (예: '월요일')
+          const dayStr = row[0]; 
           const slot = row[1];
           if(!groups[dayStr]) groups[dayStr] = { 1: [], 2: [] };
           groups[dayStr][slot].push(row);
@@ -142,15 +164,18 @@
           return (daysOrder[a] || 99) - (daysOrder[b] || 99);
       });
 
+      const dateMapping = getWeekDateMapping(); // 요일-날짜 맵핑 가져오기
       let html = '';
 
       if (sortedDays.length === 0) {
           html = `<tr><td colspan="5" style="color: #A0AEC0; font-size: 13px;">등록된 신청 내역이 없습니다.</td></tr>`;
       } else {
           sortedDays.forEach(dayStr => {
+              const realDate = dateMapping[dayStr] ? ` (${dateMapping[dayStr]})` : ''; // 예: (4월 15일)
+
               html += `<tr style="background-color: #EAF0F6; border-top: 2px solid #CBD5E0;">
                           <td colspan="5" style="text-align: center; font-weight: bold; color: #2D3748; padding: 12px; font-size: 15px;">
-                              📅 참여 예정일 : ${dayStr}
+                              📅 참여 예정일 : ${dayStr}${realDate}
                           </td>
                        </tr>`;
 
@@ -159,8 +184,11 @@
                   if (items && items.length > 0) {
                       items.forEach(row => {
                           let slotBadge = slot == 1 ? '<span class="badge-slot1">1교시</span>' : '<span class="badge-slot2">2교시</span>';
+                          // 하위 행들에도 조금 더 명확하게 날짜를 회색 텍스트로 추가해주면 좋습니다.
+                          let cellDateHtml = dateMapping[dayStr] ? `<br><span style="font-size:11px; color:#A0AEC0;">${dateMapping[dayStr]}</span>` : '';
+
                           html += `<tr>
-                                    <td>${row[0]}</td>
+                                    <td>${row[0]}${cellDateHtml}</td>
                                     <td>${slotBadge}</td>
                                     <td>${row[2]} (${row[3]})</td>
                                     <td>${row[4]} (${row[5]})</td>
