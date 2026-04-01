@@ -167,7 +167,7 @@
               if (items && items.length > 0) {
                 hasData = true;
                 items.forEach(row => {
-                  let slotBadge = slot == 1 ? '<span class="badge-slot1">1타임</span>' : '<span class="badge-slot2">2타임</span>';
+                  let slotBadge = slot == 1 ? '<span class="badge-slot1">1교시</span>' : '<span class="badge-slot2">2교시</span>';
                   html += `<tr>
                             <td>${row[0]}</td>
                             <td>${slotBadge}</td>
@@ -226,9 +226,9 @@
           <thead>
             <tr>
               <th>날짜</th>
-              <th>타임</th>
-              <th>신청자</th>
-              <th>짝꿍</th>
+              <th>시간</th>
+              <th>멘토</th>
+              <th>멘티</th>
             </tr>
           </thead>
           <tbody id="table-body">
