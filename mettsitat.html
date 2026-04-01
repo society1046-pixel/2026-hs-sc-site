@@ -173,7 +173,7 @@
                 if (items && items.length > 0) {
                     hasData = true;
                     items.forEach(row => {
-                        let slotBadge = slot == 1 ? '<span class="badge-slot1">1타임</span>' : '<span class="badge-slot2">2타임</span>';
+                        let slotBadge = slot == 1 ? '<span class="badge-slot1">1교시</span>' : '<span class="badge-slot2">2교시</span>';
                         html += `<tr>
                                   <td>${row[0]}</td>
                                   <td>${slotBadge}</td>
@@ -303,12 +303,12 @@
   <div class="container">
     
     <div class="card">
-      <h3>⏰ 신청 환경 설정</h3>
+      <h3>신청 환경 설정</h3>
       <div class="form-row">
         <label for="applyMode">신청 모드</label>
         <select id="applyMode" class="form-control" style="background-color: #FAFCFF; border-color: #7BA4DB; font-weight: bold;">
-          <option value="week">이번 주 전체 개방</option>
-          <option value="today">오늘 하루(당일)만 개방</option>
+          <option value="week">주 중 전체 개방</option>
+          <option value="today">당일 개방</option>
         </select>
       </div>
       <div class="form-row" style="margin-top: 15px;">
@@ -322,16 +322,16 @@
     </div>
 
     <div class="card">
-      <h3>➕ 학생 강제 추가 (관리자 권한)</h3>
+      <h3>학생 추가 (관리자 권한)</h3>
       <div class="form-row">
         <input type="date" id="addDate" class="form-control">
         <select id="addSlot" class="form-control">
-          <option value="1">1번 타임</option>
-          <option value="2">2번 타임</option>
+          <option value="1">1교시</option>
+          <option value="2">2교시</option>
         </select>
         <input type="text" id="addId1" class="form-control" placeholder="학번1 (예: 2101)">
         <input type="text" id="addId2" class="form-control" placeholder="학번2 (예: 2102)">
-        <button id="addBtn" class="btn btn-success" onclick="adminAdd()">강제 추가</button>
+        <button id="addBtn" class="btn btn-success" onclick="adminAdd()">추가</button>
       </div>
       <p class="info-text">* 학생 정원 및 시간 설정과 관계없이 강제로 명단에 추가합니다.</p>
     </div>
@@ -343,9 +343,9 @@
           <thead>
             <tr>
               <th>날짜</th>
-              <th>타임</th>
-              <th>신청자 (학번/이름)</th>
-              <th>짝꿍 (학번/이름)</th>
+              <th>시간</th>
+              <th>멘토 (학번/이름)</th>
+              <th>멘티 (학번/이름)</th>
               <th>관리</th>
             </tr>
           </thead>
