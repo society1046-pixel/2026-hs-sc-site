@@ -113,6 +113,7 @@
         .then(res => res.json())
         .then(data => {
             if(data.success) {
+                // 구글 시트에서 가져올 때 포함되어 있을 수 있는 따옴표를 깔끔하게 제거
                 let startVal = data.settings.start ? String(data.settings.start).replace(/'/g, '').trim() : '';
                 let endVal = data.settings.end ? String(data.settings.end).replace(/'/g, '').trim() : '';
                 let startDateVal = data.settings.startDate ? String(data.settings.startDate).trim() : '월요일';
@@ -201,7 +202,11 @@
 
         btn.innerText = "저장중...";
         
-        const requestUrl = `${API_URL}?action=setMettsiTime&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&startDate=${encodeURIComponent(startDay)}&endDate=${encodeURIComponent(endDay)}&role=${currentRole}`;
+        // ★ 핵심 수정 부분: 서버(구글 시트)에 값을 보낼 때 앞에 작은따옴표(')를 강제로 붙여서 텍스트로 인식시킵니다.
+        const safeStart = "'" + start;
+        const safeEnd = "'" + end;
+
+        const requestUrl = `${API_URL}?action=setMettsiTime&start=${encodeURIComponent(safeStart)}&end=${encodeURIComponent(safeEnd)}&startDate=${encodeURIComponent(startDay)}&endDate=${encodeURIComponent(endDay)}&role=${currentRole}`;
 
         fetch(requestUrl)
             .then(res => res.json())
