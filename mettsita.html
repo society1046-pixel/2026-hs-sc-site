@@ -24,7 +24,6 @@
     .menu-item:hover { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; }
     .action-btn { margin: 20px; padding: 12px 20px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); transition: 0.2s; }
     
-    /* 테이블 CSS 추가 변경 (5번째 열 대응) */
     .container { max-width: 800px; margin: 40px auto; padding: 0 15px; }
     .card { background: white; padding: 40px 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; }
     .card h2 { margin-top: 0; color: #2D3748; border-bottom: 2px solid #F4F7FB; padding-bottom: 15px; margin-bottom: 25px; text-align: center; }
@@ -40,7 +39,6 @@
     .badge-slot1 { background-color: #F6AD55; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
     .badge-slot2 { background-color: #82CA9D; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
     
-    /* 본인 취소 버튼 디자인 */
     .btn-cancel-sm { background-color: #F19C99; color: white; border: none; border-radius: 4px; padding: 6px 10px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; }
     .btn-cancel-sm:hover { background-color: #E57D7A; }
 
@@ -61,6 +59,9 @@
     const is2ndGrade = userId.length === 4 && userId.startsWith('2');
     const isAuthorized = is2ndGrade || (currentRole >= 32 && currentRole <= 46);
     
+    // 요일 정렬을 위한 순서 매핑
+    const daysOrder = { '월요일': 1, '화요일': 2, '수요일': 3, '목요일': 4, '금요일': 5 };
+
     if (!isAuthorized) {
       alert("접근 권한이 없습니다.");
       window.location.href = "main.html";
@@ -96,6 +97,32 @@
       loadApplications();
     }
 
+    // ★ 현재 주(Week)의 날짜를 계산하는 함수 추가
+    function getWeekDateMapping() {
+        const now = new Date();
+        const currentDay = now.getDay(); // 0(일) ~ 6(토)
+        
+        // 주말(토, 일)에는 다음 주 월요일을 기준으로 계산하도록 설정
+        let diffToMonday = currentDay === 0 ? -6 : 1 - currentDay; 
+        if (currentDay === 6) diffToMonday = 2; // 토요일
+        if (currentDay === 0) diffToMonday = 1; // 일요일
+        
+        const monday = new Date(now);
+        monday.setDate(now.getDate() + diffToMonday);
+        
+        const mapping = {};
+        const days = ['월요일', '화요일', '수요일', '목요일', '금요일'];
+        
+        for (let i = 0; i < 5; i++) {
+            let targetDate = new Date(monday);
+            targetDate.setDate(monday.getDate() + i);
+            let m = targetDate.getMonth() + 1;
+            let d = targetDate.getDate();
+            mapping[days[i]] = `${m}월 ${d}일`; 
+        }
+        return mapping;
+    }
+
     function loadApplications() {
       document.getElementById('table-body').innerHTML = "<tr><td colspan='5'>데이터를 불러오는 중입니다...</td></tr>";
       
@@ -112,31 +139,30 @@
             groups[dateStr][slot].push(row);
           });
 
-          const sortedDates = Object.keys(groups).sort((a, b) => new Date(a) - new Date(b));
-          const daysKor = ['일', '월', '화', '수', '목', '금', '토'];
+          // 요일 순서(월~금)에 맞게 정렬하도록 수정
+          const sortedDates = Object.keys(groups).sort((a, b) => (daysOrder[a] || 99) - (daysOrder[b] || 99));
+          const dateMapping = getWeekDateMapping(); // 요일-날짜 맵핑 가져오기
           let html = '';
 
           if (sortedDates.length === 0) {
              html = `<tr><td colspan="5" style="color: #A0AEC0; font-size: 13px;">현재 신청 내역이 없습니다.</td></tr>`;
           } else {
-              sortedDates.forEach(date => {
-                const d = new Date(date);
-                const dayText = isNaN(d) ? '' : ` (${daysKor[d.getDay()]})`;
+              sortedDates.forEach(dayStr => {
+                const realDate = dateMapping[dayStr] ? ` (${dateMapping[dayStr]})` : ''; // 예: (4월 15일)
 
                 html += `<tr style="background-color: #EAF0F6; border-top: 2px solid #CBD5E0;">
                             <td colspan="5" style="text-align: center; font-weight: bold; color: #2D3748; padding: 12px; font-size: 15px;">
-                                📅 ${date}${dayText}
+                                📅 ${dayStr}${realDate}
                             </td>
                          </tr>`;
 
                 [1, 2].forEach(slot => {
-                  const items = groups[date][slot];
+                  const items = groups[dayStr][slot];
                   if (items && items.length > 0) {
                     items.forEach(row => {
                       let slotBadge = slot == 1 ? '<span class="badge-slot1">1교시</span>' : '<span class="badge-slot2">2교시</span>';
                       let cancelHtml = '-';
                       
-                      // 내 학번이 포함되어 있다면 취소 버튼 생성
                       if (String(row[2]) === userId || String(row[4]) === userId) {
                           cancelHtml = `<button class="btn-cancel-sm" onclick="cancelMyApplication(${row[6]})">취소</button>`;
                       }
@@ -158,7 +184,6 @@
         });
     }
 
-    // ★ 본인 신청 내역 취소 기능
     function cancelMyApplication(rowIndex) {
         if(!confirm("해당 신청 내역을 정말 취소하시겠습니까?")) return;
         
@@ -169,7 +194,7 @@
             .then(data => {
                 if(data.success) {
                     alert("성공적으로 취소되었습니다.");
-                    loadApplications(); // 표 새로고침
+                    loadApplications(); 
                 } else {
                     alert("취소 실패: " + data.message);
                 }
@@ -214,7 +239,7 @@
         <table>
           <thead>
             <tr>
-              <th>날짜</th>
+              <th>요일</th>
               <th>시간</th>
               <th>멘토</th>
               <th>멘티</th>
