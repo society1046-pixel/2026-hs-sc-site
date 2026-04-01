@@ -60,54 +60,59 @@
       window.location.href = "main.html";
     }
 
-    // 요일 순서 매핑
-    const daysOrder = { '월요일': 1, '화요일': 2, '수요일': 3, '목요일': 4, '금요일': 5 };
-    const allDays = ['월요일', '화요일', '수요일', '목요일', '금요일'];
+    // 자동으로 요일과 날짜 세팅하기 (이번 주 혹은 다음 주)
+    function setupDateDropdown() {
+        const dateSelect = document.getElementById('applyDate');
+        let optionsHtml = '<option value="">희망 요일을 선택하세요</option>';
+        
+        let targetDate = new Date();
+        const dayOfWeek = targetDate.getDay(); // 0:일 ~ 6:토
+        
+        // 토요일이나 일요일에 접속하면 다음 주 월요일을 기준으로 계산
+        if (dayOfWeek === 0) targetDate.setDate(targetDate.getDate() + 1); 
+        else if (dayOfWeek === 6) targetDate.setDate(targetDate.getDate() + 2);
+        // 평일이면 이번 주 월요일로 맞춤
+        else targetDate.setDate(targetDate.getDate() - (dayOfWeek - 1));
+        
+        const dayNames = ['월요일', '화요일', '수요일', '목요일', '금요일'];
+        
+        for(let i=0; i<5; i++) {
+            if (i !== 2) { // 수요일(인덱스 2) 제외
+                const d = new Date(targetDate);
+                d.setDate(targetDate.getDate() + i);
+                
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                
+                const displayString = `${dayNames[i]} (${mm}/${dd})`; // 예: 월요일 (04/15)
+                optionsHtml += `<option value="${dayNames[i]}">${displayString}</option>`;
+            }
+        }
+        dateSelect.innerHTML = optionsHtml;
+    }
 
-    // 서버에서 설정된 요일(시작일~마감일)을 불러와 드롭다운 옵션을 생성합니다.
-    function loadServerSettingsAndSetDate() {
+    // 서버에서 관리자가 설정한 '신청 접수 기간(요일 및 시간)' 정보를 불러와 안내 텍스트에 띄움
+    function loadServerSettings() {
       fetch(`${API_URL}?action=getMettsiAdminData`)
         .then(res => res.json())
         .then(data => {
-            const dateSelect = document.getElementById('applyDate');
-            
-            if(data.success && data.settings.startDate && data.settings.endDate) {
-                const startDayStr = data.settings.startDate.trim();
-                const endDayStr = data.settings.endDate.trim();
+            const helpText = document.getElementById('date-help-text');
+            if(data.success && data.settings) {
+                const startDay = data.settings.startDate || '월요일';
+                const endDay = data.settings.endDate || '금요일';
+                const startTime = data.settings.start || '00:00';
+                const endTime = data.settings.end || '23:59';
                 
-                const startIdx = daysOrder[startDayStr];
-                const endIdx = daysOrder[endDayStr];
-                
-                // 설정된 요일이 유효하고, 시작 요일이 마감 요일보다 앞서거나 같을 경우
-                if (startIdx && endIdx && startIdx <= endIdx) {
-                    let optionsHtml = '<option value="">요일을 선택하세요</option>';
-                    
-                    allDays.forEach(day => {
-                        const currentIdx = daysOrder[day];
-                        // 설정된 기간 안에 포함되는 요일인지 확인
-                        if (currentIdx >= startIdx && currentIdx <= endIdx) {
-                            // 수요일은 제외
-                            if (day !== '수요일') { 
-                                optionsHtml += `<option value="${day}">${day}</option>`;
-                            }
-                        }
-                    });
-                    
-                    dateSelect.innerHTML = optionsHtml;
-                    document.getElementById('date-help-text').innerText = `* 신청 가능 요일: ${startDayStr} ~ ${endDayStr} (수요일 제외)`;
-                    document.getElementById('date-help-text').style.color = "#7BA4DB";
-                } else {
-                    dateSelect.innerHTML = '<option value="">관리자가 올바른 요일을 설정하지 않았습니다.</option>';
-                    document.getElementById('date-help-text').innerText = "서버 요일 설정 오류 (순서가 맞지 않음)";
-                }
+                helpText.innerHTML = `* <b>신청 가능 기간:</b> ${startDay} ~ ${endDay} <br>&nbsp;&nbsp; (매일 ${startTime} ~ ${endTime})`;
+                helpText.style.color = "#7BA4DB";
             } else {
-                dateSelect.innerHTML = '<option value="">데이터를 불러올 수 없습니다.</option>';
-                document.getElementById('date-help-text').innerText = "관리자가 아직 설정을 완료하지 않았습니다.";
+                helpText.innerText = "* 서버에서 신청 기간 설정을 불러오지 못했습니다.";
+                helpText.style.color = "#F19C99";
             }
         })
         .catch(err => {
             console.error("서버 설정 불러오기 실패:", err);
-            document.getElementById('applyDate').innerHTML = '<option value="">서버 통신 실패</option>';
+            document.getElementById('date-help-text').innerText = "* 서버 통신 실패 (기간 확인 불가)";
         });
     }
 
@@ -125,8 +130,6 @@
         actionBtn.innerText = "로그인 하러가기";
         actionBtn.style.backgroundColor = "#7BA4DB";
         actionBtn.onclick = function() { window.location.href = 'loginh.html'; };
-        
-        // 비회원이면 설정값을 불러올 필요도 없이 바로 튕겨냄 (위 권한 체크 로직에 의해)
       } else {
         displayId.innerText = userId;
         roleDisplay.innerText = roleNames[currentRole] || "권한 확인 됨";
@@ -139,8 +142,9 @@
         actionBtn.style.backgroundColor = "#F19C99";
         actionBtn.onclick = logout;
         
-        // 로그인 된 경우에만 날짜 불러오기 실행
-        loadServerSettingsAndSetDate();
+        // 로그인 된 경우 드롭다운 세팅 및 관리자 기간 설정 가져오기
+        setupDateDropdown();
+        loadServerSettings();
       }
     }
 
@@ -222,11 +226,12 @@
       </div>
 
       <div class="form-group">
-        <label for="applyDate">신청 요일</label>
+        <label for="applyDate">참여 희망 요일</label>
         <select id="applyDate" class="form-control">
-          <option value="">데이터를 불러오는 중...</option>
-        </select>
-        <div id="date-help-text" style="font-size: 13px; margin-top: 5px; font-weight: bold;"></div>
+          </select>
+        <div id="date-help-text" style="font-size: 13px; margin-top: 8px; font-weight: normal; line-height: 1.4;">
+          * 신청 설정 데이터를 불러오는 중...
+        </div>
       </div>
 
       <div class="form-group">
