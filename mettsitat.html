@@ -90,7 +90,7 @@
       loadAdminData();
     }
 
-    // ★ 현재 주(Week)의 날짜를 계산하는 함수 추가
+    // ★ 현재 주(Week)의 날짜를 계산하는 함수
     function getWeekDateMapping() {
         const now = new Date();
         const currentDay = now.getDay(); 
@@ -154,10 +154,13 @@
     function renderTable(list) {
       const groups = {};
       list.forEach(row => {
-          const dayStr = row[0]; 
+          // ★ 수정된 부분: 구글 시트에서 가져온 텍스트의 앞뒤 공백을 강제로 제거
+          const dayStr = String(row[0]).trim(); 
           const slot = row[1];
+          
           if(!groups[dayStr]) groups[dayStr] = { 1: [], 2: [] };
-          groups[dayStr][slot].push(row);
+          // 기존 row 원본 대신 공백이 제거된 dayStr을 사용하도록 덮어쓰기
+          groups[dayStr][slot].push({ ...row, 0: dayStr }); 
       });
 
       const sortedDays = Object.keys(groups).sort((a, b) => {
@@ -171,7 +174,8 @@
           html = `<tr><td colspan="5" style="color: #A0AEC0; font-size: 13px;">등록된 신청 내역이 없습니다.</td></tr>`;
       } else {
           sortedDays.forEach(dayStr => {
-              const realDate = dateMapping[dayStr] ? ` (${dateMapping[dayStr]})` : ''; // 예: (4월 15일)
+              // 매핑된 날짜가 있으면 가져오고, 없으면 빈 문자열 반환
+              const realDate = dateMapping[dayStr] ? ` (${dateMapping[dayStr]})` : '';
 
               html += `<tr style="background-color: #EAF0F6; border-top: 2px solid #CBD5E0;">
                           <td colspan="5" style="text-align: center; font-weight: bold; color: #2D3748; padding: 12px; font-size: 15px;">
@@ -184,7 +188,6 @@
                   if (items && items.length > 0) {
                       items.forEach(row => {
                           let slotBadge = slot == 1 ? '<span class="badge-slot1">1교시</span>' : '<span class="badge-slot2">2교시</span>';
-                          // 하위 행들에도 조금 더 명확하게 날짜를 회색 텍스트로 추가해주면 좋습니다.
                           let cellDateHtml = dateMapping[dayStr] ? `<br><span style="font-size:11px; color:#A0AEC0;">${dateMapping[dayStr]}</span>` : '';
 
                           html += `<tr>
