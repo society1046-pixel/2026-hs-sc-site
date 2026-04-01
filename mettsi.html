@@ -60,8 +60,35 @@
       window.location.href = "main.html";
     }
 
+    // ★ 추가된 함수: 현재 날짜를 기준으로 이번 주(월~금)의 날짜(MM/DD)를 계산합니다.
+    function getWeekDateMap() {
+      const today = new Date();
+      const dayOfWeek = today.getDay(); // 0:일, 1:월, ..., 6:토
+      
+      // 주말(토, 일)인 경우 다음 주 월요일을 기준으로 계산하도록 조정
+      if (dayOfWeek === 6) today.setDate(today.getDate() + 2);
+      if (dayOfWeek === 0) today.setDate(today.getDate() + 1);
+
+      // 이번 주 월요일 찾기
+      const distanceToMonday = 1 - today.getDay();
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + distanceToMonday);
+
+      const dateMap = {};
+      const days = ['월요일', '화요일', '수요일', '목요일', '금요일'];
+      
+      for (let i = 0; i < 5; i++) {
+        let targetDate = new Date(monday);
+        targetDate.setDate(monday.getDate() + i);
+        dateMap[days[i]] = `${targetDate.getMonth() + 1}/${targetDate.getDate()}`; // "M/D" 형식
+      }
+      return dateMap;
+    }
+
     // 서버에서 설정된 요일을 불러와 드롭다운 옵션을 생성합니다.
     function loadServerSettingsAndSetDate() {
+      const dateMap = getWeekDateMap(); // 요일별 날짜 정보 가져오기
+
       fetch(`${API_URL}?action=getMettsiAdminData`)
         .then(res => res.json())
         .then(data => {
@@ -77,32 +104,37 @@
                     for (let i = startIdx; i <= endIdx; i++) {
                         // 기존 규칙에 따라 수요일은 목록에서 제외합니다.
                         if (daysOrder[i] === '수요일') continue; 
-                        optionsHtml += `<option value="${daysOrder[i]}">${daysOrder[i]}</option>`;
+                        
+                        let dayName = daysOrder[i];
+                        let dateString = dateMap[dayName]; // 예: "4/1"
+                        
+                        // 화면에는 "월요일 (4/1)" 처럼 보이지만, 서버로 보내는 value는 "월요일"로 유지
+                        optionsHtml += `<option value="${dayName}">${dayName} (${dateString})</option>`;
                     }
                     dateSelect.innerHTML = optionsHtml;
                     document.getElementById('date-help-text').innerText = `* 신청 가능 요일: ${data.settings.startDate} ~ ${data.settings.endDate} (수요일 제외)`;
                     document.getElementById('date-help-text').style.color = "#7BA4DB";
                 } else {
-                    setDefaultDays(dateSelect);
+                    setDefaultDays(dateSelect, dateMap);
                 }
             } else {
-                setDefaultDays(dateSelect);
+                setDefaultDays(dateSelect, dateMap);
             }
         })
         .catch(err => {
             console.error("서버 설정 불러오기 실패:", err);
-            setDefaultDays(document.getElementById('applyDate'));
+            setDefaultDays(document.getElementById('applyDate'), getWeekDateMap());
         });
     }
 
-    // 서버 설정을 불러오지 못했을 때의 기본 옵션
-    function setDefaultDays(selectElement) {
+    // 서버 설정을 불러오지 못했을 때의 기본 옵션 (날짜 포함)
+    function setDefaultDays(selectElement, dateMap) {
         selectElement.innerHTML = `
             <option value="">요일을 선택하세요</option>
-            <option value="월요일">월요일</option>
-            <option value="화요일">화요일</option>
-            <option value="목요일">목요일</option>
-            <option value="금요일">금요일</option>
+            <option value="월요일">월요일 (${dateMap['월요일']})</option>
+            <option value="화요일">화요일 (${dateMap['화요일']})</option>
+            <option value="목요일">목요일 (${dateMap['목요일']})</option>
+            <option value="금요일">금요일 (${dateMap['금요일']})</option>
         `;
         document.getElementById('date-help-text').innerText = "* 현재 서버 요일 제한을 확인할 수 없습니다. (수요일 제외)";
     }
