@@ -163,6 +163,16 @@
       }
     }
 
+    function toggleMenu() {
+      const sidebar = document.getElementById("mySidebar");
+      sidebar.style.left = sidebar.style.left === "0px" ? "-280px" : "0px";
+    }
+
+    function toggleSubMenu(menuId) { //토글메뉴
+      const subMenu = document.getElementById(menuId);
+      subMenu.classList.toggle('show');
+    }
+
     function submitApplication() {
       const applyDate = document.getElementById('applyDate').value;
       const timeSlot = document.getElementById('timeSlot').value;
