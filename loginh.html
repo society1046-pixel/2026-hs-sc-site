@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>형석고등학교 학생회 사이트</title>
+  <title>형석고등학교 학생회 사이트 - 로그인</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     /* 오리지널 깔끔한 블루톤 디자인 */
@@ -12,9 +12,13 @@
     .login-card p { color: #888; font-size: 14px; margin-bottom: 25px; }
     input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; transition: 0.2s; }
     input:focus { border-color: #4A90E2; box-shadow: 0 0 5px rgba(74, 144, 226, 0.3); }
-    button { width: 100%; padding: 14px; background-color: #4A90E2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
+    button { width: 100%; padding: 14px; background-color: #4A90E2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; margin-bottom: 10px; }
     button:hover { background-color: #357ABD; }
     #loading-msg { display: none; color: #4A90E2; font-size: 14px; margin-top: 15px; font-weight: bold; }
+    
+    /* 비밀번호 변경 텍스트 링크 스타일 */
+    .link-text { color: #888; font-size: 13px; text-decoration: underline; cursor: pointer; margin-top: 10px; display: inline-block; }
+    .link-text:hover { color: #4A90E2; }
   </style>
 
   <script src="loginh.js"></script>
@@ -23,12 +27,25 @@
 <body>
   <div class="login-card">
     <h2>형석고등학교 학생회</h2>
-    <p>부여받은 학번(아이디)을 입력하세요.</p>
     
-    <input type="text" id="userId" placeholder="학번을 입력하세요">
-    <button onclick="attemptLogin()">로그인</button>
-    
-    <div id="loading-msg">인증 정보를 확인 중입니다...</div>
+    <div id="view-login">
+      <p>부여받은 학번과 비밀번호를 입력하세요.</p>
+      <input type="text" id="userId" placeholder="학번을 입력하세요">
+      <input type="password" id="userPw" placeholder="비밀번호를 입력하세요" onkeyup="if(window.event.keyCode==13){attemptLogin()}">
+      <button onclick="attemptLogin()">로그인</button>
+      <span class="link-text" onclick="toggleView('change')">비밀번호를 변경하시겠습니까?</span>
+    </div>
+
+    <div id="view-change-pw" style="display: none;">
+      <p>비밀번호 변경을 위해 정보를 입력하세요.</p>
+      <input type="text" id="changeId" placeholder="학번을 입력하세요">
+      <input type="password" id="oldPw" placeholder="기존 비밀번호">
+      <input type="password" id="newPw" placeholder="새 비밀번호">
+      <button onclick="attemptChangePw()" style="background-color: #4A5568;">비밀번호 변경하기</button>
+      <span class="link-text" onclick="toggleView('login')">로그인 화면으로 돌아가기</span>
+    </div>
+
+    <div id="loading-msg">서버와 통신 중입니다...</div>
   </div>
 </body>
 </html>
