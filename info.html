@@ -259,8 +259,12 @@
               const card = document.createElement('div');
               card.className = 'notice-card';
               
-              // 32번 이상의 권한을 가진 경우에만 삭제 버튼 추가
-              const deleteBtnHTML = (currentRole >= 32) 
+              // [수정된 부분] 본인 글이거나 관리자(45, 46)인 경우에만 삭제 버튼 표시
+              const isAuthor = userName && item.author.includes(userName);
+              const isAdmin = currentRole === 45 || currentRole === 46;
+              const canDelete = isAuthor || isAdmin;
+
+              const deleteBtnHTML = canDelete 
                 ? `<button class="btn-danger" onclick="deleteNotice('${escapeHTML(item.title)}')">삭제</button>` 
                 : '';
 
@@ -330,7 +334,7 @@
         });
     }
 
-    // 공지사항 삭제 함수 추가
+    // [수정된 부분] 공지사항 삭제 시 서버로 userName도 함께 전송하여 권한 2차 검증
     function deleteNotice(title) {
       if (!confirm(`'${title}' 공지사항을 정말 삭제하시겠습니까?`)) {
         return;
@@ -338,8 +342,8 @@
 
       document.getElementById('loading-msg').style.display = 'block';
 
-      // 삭제 API 요청 (제목을 기준으로 삭제)
-      const query = `?action=deleteNotice&role=${currentRole}&title=${encodeURIComponent(title)}`;
+      // userName 파라미터 추가
+      const query = `?action=deleteNotice&role=${currentRole}&title=${encodeURIComponent(title)}&userName=${encodeURIComponent(userName)}`;
       
       fetch(API_URL + query)
         .then(res => res.json())
