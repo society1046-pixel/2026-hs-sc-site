@@ -2,68 +2,128 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>학생회 공지사항</title>
+  <title>형석고등학교 학생회 - 공지사항</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #f5f7fa; margin: 0; padding: 20px; color: #333; }
-    .container { max-width: 800px; margin: 0 auto; }
-    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4A90E2; padding-bottom: 10px; margin-bottom: 20px; }
-    .header h2 { color: #4A90E2; margin: 0; font-size: 24px; }
-    .btn { padding: 10px 16px; background-color: #4A90E2; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; transition: 0.2s; }
-    .btn:hover { background-color: #357ABD; }
-    .btn-secondary { background-color: #888; }
-    .btn-secondary:hover { background-color: #666; }
+    /* 공통 베이스 스타일 (main.html과 동일) */
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
+    .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; padding: 0; }
+    .nav-center { display: flex; align-items: center; justify-content: center; }
+    .nav-logo { height: 35px; width: 35px; background-color: white; border-radius: 50%; margin-right: 10px; object-fit: contain; padding: 2px; }
+    .nav-title { font-size: 20px; font-weight: bold; margin: 0; }
     
-    .notice-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
-    .notice-title { font-size: 18px; font-weight: bold; margin-bottom: 8px; color: #2c3e50; }
-    .notice-info { font-size: 13px; color: #7f8c8d; margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 10px; }
-    .notice-content { font-size: 15px; line-height: 1.6; white-space: pre-wrap; }
+    .sidebar { height: 100%; width: 280px; position: fixed; top: 0; left: -280px; background-color: white; box-shadow: 4px 0 15px rgba(0,0,0,0.05); transition: 0.3s; z-index: 1000; overflow-x: hidden; display: flex; flex-direction: column; }
+    .sidebar-header { background-color: #FAFCFF; padding: 30px 20px 20px; border-bottom: 1px solid #EAF0F6; position: relative; }
+    .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; border: none; background: none; color: #A0AEC0; }
+    .user-id-text { font-size: 20px; font-weight: bold; color: #2D3748; margin: 0 0 8px 0; }
+    .user-role-badge { display: inline-block; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: bold; }
+    .menu-list { padding: 10px 0; flex-grow: 1; }
+    .menu-item { padding: 15px 25px; display: block; color: #7BA4DB; font-weight: bold; text-decoration: none; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; }
+    .menu-item:hover { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; }
+    .action-btn { margin: 20px; padding: 12px 20px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); transition: 0.2s; }
     
-    #write-form { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: none; margin-bottom: 20px; }
-    .input-group { margin-bottom: 15px; }
-    .input-group label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #555; }
-    .input-group input, .input-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; outline: none; }
-    .input-group textarea { resize: vertical; min-height: 150px; }
+    /* 본문 컨테이너 */
+    .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+
+    /* 버튼 스타일 */
+    .btn-primary { background-color: #7BA4DB; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
+    .btn-primary:hover { background-color: #618DC7; }
+    .btn-secondary { background-color: #EAF0F6; color: #4A5568; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
+    .btn-secondary:hover { background-color: #DCE4EC; }
+
+    /* 공지사항 헤더 (카드형 디자인) */
+    .board-header-card { background: white; padding: 20px 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .board-header-card h3 { margin: 0; color: #2D3748; font-size: 20px; }
+    .header-btns { display: flex; gap: 8px; }
+
+    /* 글쓰기 폼 영역 */
+    #write-form { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid #EAF0F6; display: none; margin-bottom: 25px; }
+    .write-form-title { font-size: 16px; font-weight: bold; color: #2D3748; margin-bottom: 15px; border-bottom: 2px solid #F4F7FB; padding-bottom: 10px; }
+    .input-label { display: block; font-size: 13px; font-weight: bold; color: #718096; margin-bottom: 6px; }
+    .input-box { width: 100%; padding: 12px; border: 1px solid #DCE4EC; border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 14px; margin-bottom: 15px; transition: 0.2s; color: #2D3748; }
+    .input-box:focus { border-color: #7BA4DB; outline: none; }
+    textarea.input-box { resize: vertical; min-height: 180px; }
+    .author-badge { color: #7BA4DB; font-weight: bold; background: #FAFCFF; padding: 4px 10px; border-radius: 6px; border: 1px solid #EAF0F6; display: inline-block; margin-bottom: 15px; font-size: 14px; }
+    .form-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+    /* 공지사항 목록 */
+    .notice-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; margin-bottom: 15px; transition: 0.2s; }
+    .notice-card:hover { box-shadow: 0 4px 15px rgba(123, 164, 219, 0.15); border-color: #DCE4EC; }
+    .notice-title { font-size: 18px; font-weight: bold; color: #2D3748; margin-bottom: 8px; }
+    .notice-meta { font-size: 13px; color: #A0AEC0; margin-bottom: 15px; border-bottom: 1px dashed #EAF0F6; padding-bottom: 12px; }
+    .notice-meta b { color: #4A5568; }
+    .notice-content { font-size: 15px; line-height: 1.6; color: #4A5568; white-space: pre-wrap; }
     
-    #loading-msg { text-align: center; color: #4A90E2; font-weight: bold; margin: 20px 0; display: none; }
-    .author-badge { color: #4A90E2; font-weight: bold; background: #eef5ff; padding: 2px 6px; border-radius: 4px; }
+    #loading-msg { text-align: center; color: #7BA4DB; font-weight: bold; margin: 30px 0; display: none; }
+    
+    /* 모바일 적응 */
+    @media (max-width: 480px) {
+      .board-header-card { flex-direction: column; align-items: flex-start; gap: 15px; }
+      .header-btns { width: 100%; display: flex; justify-content: flex-end; }
+    }
   </style>
+
+  <script src="main.js"></script>
 </head>
 <body>
 
+  <div class="navbar">
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+    <div class="nav-center">
+      <img src="https://drive.google.com/thumbnail?id=1-vFaLyktqvl_ywa0BpiBppSI6lEgsKDd&sz=w200" alt="로고" class="nav-logo">
+      <p class="nav-title">형석고등학교 학생회</p>
+    </div>
+    <div style="width: 24px;"></div> 
+  </div>
+
+  <div id="mySidebar" class="sidebar">
+    <div class="sidebar-header">
+      <button class="close-btn" onclick="toggleMenu()">×</button>
+      <h3 class="user-id-text" id="display-id">ID 로딩중...</h3>
+      <span class="user-role-badge" id="display-role">권한 로딩중...</span>
+    </div>
+    <div class="menu-list" id="menu-list-container"></div>
+    <button id="action-btn" class="action-btn">버튼 로딩중...</button>
+  </div>
+
   <div class="container">
-    <div class="header">
-      <h2>학생회 공지사항</h2>
-      <div>
-        <button class="btn btn-secondary" onclick="location.href='main.html'">메인으로</button>
-        <button id="btn-show-write" class="btn" style="display: none;" onclick="toggleWriteForm()">글쓰기</button>
+    
+    <div class="board-header-card">
+      <h3>📢 학생회 공지사항</h3>
+      <div class="header-btns">
+        <button class="btn-secondary" onclick="location.href='main.html'">메인으로</button>
+        <button id="btn-show-write" class="btn-primary" style="display: none;" onclick="toggleWriteForm()">✏️ 글쓰기</button>
       </div>
     </div>
 
     <div id="loading-msg">데이터를 불러오는 중입니다...</div>
 
     <div id="write-form">
-      <div style="margin-bottom: 15px; font-size: 14px; color: #666;">
-        작성자: <span id="display-author" class="author-badge"></span>
+      <div class="write-form-title">새 공지사항 작성</div>
+      
+      <span class="input-label">작성자</span>
+      <div id="display-author" class="author-badge"></div>
+
+      <label class="input-label" for="notice-title">제목</label>
+      <input type="text" id="notice-title" class="input-box" placeholder="공지사항 제목을 입력하세요">
+      
+      <label class="input-label" for="notice-content">내용</label>
+      <textarea id="notice-content" class="input-box" placeholder="공지사항 내용을 상세히 적어주세요"></textarea>
+      
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="toggleWriteForm()">취소</button>
+        <button class="btn-primary" onclick="submitNotice()">등록하기</button>
       </div>
-      <div class="input-group">
-        <label>제목</label>
-        <input type="text" id="notice-title" placeholder="공지사항 제목을 입력하세요">
-      </div>
-      <div class="input-group">
-        <label>내용</label>
-        <textarea id="notice-content" placeholder="공지사항 내용을 상세히 적어주세요"></textarea>
-      </div>
-      <button class="btn" onclick="submitNotice()">등록하기</button>
-      <button class="btn btn-secondary" onclick="toggleWriteForm()">취소</button>
     </div>
 
     <div id="notice-list"></div>
+
   </div>
 
   <script>
-    // ★ 주의: 본인의 구글 웹앱 URL로 교체 필수!
-    const API_URL = "본인의_구글_스크립트_URL"; 
+    // ★ 주의: 본인의 구글 웹앱 URL로 교체 필수! ★
+    const API_URL = "본인의_구글_스크립트_웹앱_URL을_여기에_넣어주세요"; 
 
     // 권한 번호별 부서/직책 매핑 표
     const roleMap = {
@@ -78,14 +138,21 @@
 
     const userRole = parseInt(sessionStorage.getItem('userRole') || 0);
     const userName = sessionStorage.getItem('userName') || "익명";
-    const userDept = roleMap[userRole] || "학생"; // 번호에 맞는 직책 가져오기
+    const userDept = roleMap[userRole] || "학생";
 
     window.onload = () => {
-      // 권한이 1(재학생)보다 큰 임원 이상만 글쓰기 가능
+      // main.js에 있는 초기화 함수가 있다면 실행 (사이드바 정보 표시용)
+      if (typeof initMain === "function") {
+        initMain();
+      }
+
+      // 1(재학생)보다 큰 임원 권한이면 글쓰기 버튼 표시
       if (userRole > 1) {
         document.getElementById('btn-show-write').style.display = 'inline-block';
         document.getElementById('display-author').innerText = `${userName} (${userDept})`;
       }
+      
+      // 공지사항 목록 불러오기
       fetchNotices();
     };
 
@@ -105,14 +172,21 @@
               card.className = 'notice-card';
               card.innerHTML = `
                 <div class="notice-title">${escapeHTML(item.title)}</div>
-                <div class="notice-info">작성자: <b>${escapeHTML(item.author)}</b> | 작성일: ${item.date}</div>
+                <div class="notice-meta">작성자: <b>${escapeHTML(item.author)}</b> &nbsp;|&nbsp; 작성일: ${item.date}</div>
                 <div class="notice-content">${escapeHTML(item.content)}</div>
               `;
               listContainer.appendChild(card);
             });
           } else {
-            listContainer.innerHTML = "<p style='text-align:center; color:#888;'>등록된 공지사항이 없습니다.</p>";
+            listContainer.innerHTML = `
+              <div class="notice-card" style="text-align:center; color:#A0AEC0; padding: 40px 20px;">
+                현재 등록된 공지사항이 없습니다.
+              </div>`;
           }
+        })
+        .catch(err => {
+          loadingMsg.style.display = 'none';
+          listContainer.innerHTML = "<p style='text-align:center; color:#F19C99;'>데이터를 불러오는 중 오류가 발생했습니다.</p>";
         });
     }
 
@@ -126,11 +200,10 @@
       const content = document.getElementById('notice-content').value.trim();
 
       if (!title || !content) {
-        alert("제목과 내용을 입력해주세요.");
+        alert("제목과 내용을 모두 입력해주세요.");
         return;
       }
 
-      // 작성자 이름을 "이름 (부서/직책)" 형태로 자동 생성
       const authorString = `${userName} (${userDept})`;
 
       document.getElementById('loading-msg').style.display = 'block';
@@ -149,11 +222,13 @@
           } else {
             document.getElementById('loading-msg').style.display = 'none';
             alert(data.message);
+            document.getElementById('write-form').style.display = 'block';
           }
         })
         .catch(err => {
           document.getElementById('loading-msg').style.display = 'none';
-          alert("오류가 발생했습니다.");
+          alert("서버와 통신 중 오류가 발생했습니다.");
+          document.getElementById('write-form').style.display = 'block';
         });
     }
 
