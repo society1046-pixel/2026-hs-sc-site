@@ -46,6 +46,7 @@ function initMain() {
     // 메뉴 숨기고 안내문 띄우기 // 비로그인 메뉴 바 설정
     menuContainer.innerHTML = `
       <div class="menu-item" onclick="goToPage('main')"> 메인 화면</div>
+      <div class="menu-item" onclick="goToPage('scint')">공지사항</div>
       <div class="menu-item" onclick="goToPage('scint')"> 학생회 소개</div>
       <div style="padding: 30px 20px; text-align: center; color: #A0AEC0; font-size: 13px; line-height: 1.5;">더 많은 기능을<br>이용하시려면 로그인해주세요.</div>
     `;
@@ -69,6 +70,7 @@ function initMain() {
     // 정상적인 메뉴 보여주기
     menuContainer.innerHTML = `
       <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+      <div class="menu-item" onclick="goToPage('scint')">공지사항</div>
       <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
       <div class="menu-item" onclick="toggleSubMenu('mett')">2학년부 멘토멘티(이음의 '도약') ▼</div>
       <div id="mett" class="sub-menu">
