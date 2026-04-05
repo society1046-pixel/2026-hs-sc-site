@@ -69,7 +69,8 @@
     }
   </style>
 </head>
-<body onload="initPage()"> <div class="navbar">
+<body onload="initPage()"> 
+  <div class="navbar">
     <button class="menu-btn" onclick="toggleMenu()">☰</button>
     <div class="nav-center">
       <img src="https://drive.google.com/thumbnail?id=1-vFaLyktqvl_ywa0BpiBppSI6lEgsKDd&sz=w200" alt="로고" class="nav-logo">
@@ -81,11 +82,11 @@
   <div id="mySidebar" class="sidebar">
     <div class="sidebar-header">
       <button class="close-btn" onclick="toggleMenu()">×</button>
-      <h3 class="user-id-text" id="display-id">ID 로딩중...</h3>
-      <span class="user-role-badge" id="display-role">권한 로딩중...</span>
+      <h3 class="user-id-text" id="display-id">로그인이 필요합니다.</h3>
+      <span class="user-role-badge" id="display-role" style="background-color: #A0AEC0;">비회원</span>
     </div>
     <div class="menu-list" id="menu-list-container"></div>
-    <button id="action-btn" class="action-btn">버튼 로딩중...</button>
+    <button id="action-btn" class="action-btn">로그인 하러가기</button>
   </div>
 
   <div class="container">
@@ -117,10 +118,8 @@
   </div>
 
   <script>
-    // 본인의 앱스크립트 URL (mettsi.html에 있던 URL 그대로 적용!)
     const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
 
-    // 권한 맵핑 (mettsi.html과 동일)
     const roleNames = {
       1: "재학생",
       2: "1-1. 반장", 3: "1-1. 부반장", 4: "1-2. 반장", 5: "1-2. 부반장", 
@@ -141,12 +140,14 @@
       45: "선생님", 46: "관리자"
     };
 
-    // 저장된 로그인 정보 가져오기
-    let currentRole = parseInt(sessionStorage.getItem('userRole') || 0);
+    // ★ 수정됨: 로그인 기록이 없을 때 오류(NaN)가 나는 현상 완벽 차단!
+    let currentRole = parseInt(sessionStorage.getItem('userRole'));
+    if (isNaN(currentRole)) {
+      currentRole = 0; // 숫자가 아니면 무조건 0(비회원)으로 만듦
+    }
     const userId = sessionStorage.getItem('userId') || '';
     const userName = sessionStorage.getItem('userName') || '';
 
-    // ★ 화면 초기화 함수 (mettsi.html의 기능 완벽 이식)
     function initPage() {
       const displayId = document.getElementById('display-id');
       const roleDisplay = document.getElementById('display-role');
@@ -154,29 +155,29 @@
       const actionBtn = document.getElementById('action-btn');
 
       if (currentRole === 0) {
-        // 비로그인 상태
+        // 비로그인 상태일 때 메뉴 구성
         displayId.innerText = "로그인이 필요합니다.";
         roleDisplay.innerText = "비회원";
         roleDisplay.style.backgroundColor = "#A0AEC0";
-        menuContainer.innerHTML = `<div class="menu-item" onclick="goToPage('main')">메인 화면</div>`;
+        // ★ 메인 화면 가기 버튼이 확실히 보이도록 보장
+        menuContainer.innerHTML = `<div class="menu-item" onclick="goToPage('main')">🏠 메인 화면으로</div>`;
         actionBtn.innerText = "로그인 하러가기";
         actionBtn.style.backgroundColor = "#7BA4DB";
         actionBtn.onclick = function() { window.location.href = 'loginh.html'; };
       } else {
-        // 로그인 상태
+        // 로그인 상태일 때
         displayId.innerText = userId + (userName ? ` (${userName})` : "");
         roleDisplay.innerText = roleNames[currentRole] || "권한 미상";
 
-        // 직책별 색상 세팅
         if (currentRole === 1) roleDisplay.style.backgroundColor = "#82CA9D"; 
         else if (currentRole >= 2 && currentRole <= 31) roleDisplay.style.backgroundColor = "#F6AD55"; 
         else if (currentRole >= 32 && currentRole <= 41) roleDisplay.style.backgroundColor = "#B794F4"; 
         else if (currentRole >= 42 && currentRole <= 44) roleDisplay.style.backgroundColor = "#F687B3"; 
         else if (currentRole >= 45 && currentRole <= 46) roleDisplay.style.backgroundColor = "#F19C99";
 
-        // 서브메뉴가 포함된 전체 메뉴 렌더링
+        // 전체 메뉴 렌더링
         menuContainer.innerHTML = `
-          <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+          <div class="menu-item" onclick="goToPage('main')">🏠 메인 화면</div>
           <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
           <div class="menu-item" onclick="toggleSubMenu('mett')">2학년부 멘토멘티(이음의 '도약') ▼</div>
           <div id="mett" class="sub-menu">
@@ -197,7 +198,6 @@
         actionBtn.onclick = logout;
       }
 
-      // --- 여기서부터 공지사항 페이지 전용 기능 추가 ---
       // 반장 이상(currentRole > 1)일 경우 글쓰기 버튼 표시
       if (currentRole > 1) {
         document.getElementById('btn-show-write').style.display = 'inline-block';
@@ -209,7 +209,6 @@
       fetchNotices();
     }
 
-    // --- 공통 기능 함수들 ---
     function toggleSubMenu(menuId) { 
       const subMenu = document.getElementById(menuId);
       if (subMenu) {
@@ -244,8 +243,6 @@
     
     function goToPage(pageName) { window.location.href = pageName + '.html'; }
 
-
-    // --- 공지사항 전용 기능 함수들 ---
     function fetchNotices() {
       const loadingMsg = document.getElementById('loading-msg');
       const listContainer = document.getElementById('notice-list');
