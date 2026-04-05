@@ -5,7 +5,7 @@
   <title>형석고등학교 학생회 - 공지사항</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* 공통 베이스 스타일 및 네비게이션/사이드바 (mettsi.html과 동일) */
+    /* 공통 베이스 스타일 및 네비게이션/사이드바 */
     body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
     .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; padding: 0; }
@@ -93,7 +93,6 @@
     <div class="board-header-card">
       <h3>📢 학생회 공지사항</h3>
       <div class="header-btns">
-        <button class="btn-secondary" onclick="goToPage('main')">메인으로</button>
         <button id="btn-show-write" class="btn-primary" style="display: none;" onclick="toggleWriteForm()">✏️ 글쓰기</button>
       </div>
     </div>
@@ -140,10 +139,9 @@
       45: "선생님", 46: "관리자"
     };
 
-    // ★ 수정됨: 로그인 기록이 없을 때 오류(NaN)가 나는 현상 완벽 차단!
     let currentRole = parseInt(sessionStorage.getItem('userRole'));
     if (isNaN(currentRole)) {
-      currentRole = 0; // 숫자가 아니면 무조건 0(비회원)으로 만듦
+      currentRole = 0; 
     }
     const userId = sessionStorage.getItem('userId') || '';
     const userName = sessionStorage.getItem('userName') || '';
@@ -155,17 +153,14 @@
       const actionBtn = document.getElementById('action-btn');
 
       if (currentRole === 0) {
-        // 비로그인 상태일 때 메뉴 구성
         displayId.innerText = "로그인이 필요합니다.";
         roleDisplay.innerText = "비회원";
         roleDisplay.style.backgroundColor = "#A0AEC0";
-        // ★ 메인 화면 가기 버튼이 확실히 보이도록 보장
-        menuContainer.innerHTML = `<div class="menu-item" onclick="goToPage('main')">🏠 메인 화면으로</div>`;
+        menuContainer.innerHTML = `<div class="menu-item" onclick="goToPage('main')">메인 화면으로</div>`;
         actionBtn.innerText = "로그인 하러가기";
         actionBtn.style.backgroundColor = "#7BA4DB";
         actionBtn.onclick = function() { window.location.href = 'loginh.html'; };
       } else {
-        // 로그인 상태일 때
         displayId.innerText = userId + (userName ? ` (${userName})` : "");
         roleDisplay.innerText = roleNames[currentRole] || "권한 미상";
 
@@ -175,7 +170,6 @@
         else if (currentRole >= 42 && currentRole <= 44) roleDisplay.style.backgroundColor = "#F687B3"; 
         else if (currentRole >= 45 && currentRole <= 46) roleDisplay.style.backgroundColor = "#F19C99";
 
-        // 전체 메뉴 렌더링
         menuContainer.innerHTML = `
           <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
           <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
@@ -198,14 +192,12 @@
         actionBtn.onclick = logout;
       }
 
-      // 반장 이상(currentRole > 1)일 경우 글쓰기 버튼 표시
       if (currentRole > 1) {
         document.getElementById('btn-show-write').style.display = 'inline-block';
         const userDept = roleNames[currentRole] || "학생";
         document.getElementById('display-author').innerText = `${userName} (${userDept})`;
       }
       
-      // 공지사항 리스트 불러오기
       fetchNotices();
     }
 
