@@ -159,7 +159,11 @@
         displayId.innerText = "로그인이 필요합니다.";
         roleDisplay.innerText = "비회원";
         roleDisplay.style.backgroundColor = "#A0AEC0";
-        menuContainer.innerHTML = `<div class="menu-item" onclick="goToPage('main')">메인 화면으로</div>`;
+        menuContainer.innerHTML = `
+          <div class="menu-item" onclick="goToPage('main')">메인 화면으로</div>
+          <div class="menu-item" onclick="goToPage('info')">공지사항</div>
+          <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
+        `;
         actionBtn.innerText = "로그인 하러가기";
         actionBtn.style.backgroundColor = "#7BA4DB";
         actionBtn.onclick = function() { window.location.href = 'loginh.html'; };
@@ -175,6 +179,7 @@
 
         menuContainer.innerHTML = `
           <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+          <div class="menu-item" onclick="goToPage('info')">공지사항</div>
           <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
           <div class="menu-item" onclick="toggleSubMenu('mett')">2학년부 멘토멘티(이음의 '도약') ▼</div>
           <div id="mett" class="sub-menu">
