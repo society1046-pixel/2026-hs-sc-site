@@ -36,6 +36,8 @@
     .btn-primary:hover { background-color: #618DC7; }
     .btn-secondary { background-color: #EAF0F6; color: #4A5568; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
     .btn-secondary:hover { background-color: #DCE4EC; }
+    .btn-danger { background-color: #FC8181; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 12px; }
+    .btn-danger:hover { background-color: #E53E3E; }
 
     /* 공지사항 헤더 */
     .board-header-card { background: white; padding: 20px 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -55,7 +57,8 @@
     /* 공지사항 목록 */
     .notice-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; margin-bottom: 15px; transition: 0.2s; }
     .notice-card:hover { box-shadow: 0 4px 15px rgba(123, 164, 219, 0.15); border-color: #DCE4EC; }
-    .notice-title { font-size: 18px; font-weight: bold; color: #2D3748; margin-bottom: 8px; }
+    .notice-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .notice-title { font-size: 18px; font-weight: bold; color: #2D3748; margin: 0; }
     .notice-meta { font-size: 13px; color: #A0AEC0; margin-bottom: 15px; border-bottom: 1px dashed #EAF0F6; padding-bottom: 12px; }
     .notice-meta b { color: #4A5568; }
     .notice-content { font-size: 15px; line-height: 1.6; color: #4A5568; white-space: pre-wrap; }
@@ -192,7 +195,8 @@
         actionBtn.onclick = logout;
       }
 
-      if (currentRole >= 32) { // 👉 여기를 32로 변경!
+      // 글쓰기 권한: 32번 이상으로 제한
+      if (currentRole >= 32) { 
         document.getElementById('btn-show-write').style.display = 'inline-block';
         const userDept = roleNames[currentRole] || "학생";
         document.getElementById('display-author').innerText = `${userName} (${userDept})`;
@@ -249,8 +253,17 @@
             data.list.forEach(item => {
               const card = document.createElement('div');
               card.className = 'notice-card';
+              
+              // 32번 이상의 권한을 가진 경우에만 삭제 버튼 추가
+              const deleteBtnHTML = (currentRole >= 32) 
+                ? `<button class="btn-danger" onclick="deleteNotice('${escapeHTML(item.title)}')">삭제</button>` 
+                : '';
+
               card.innerHTML = `
-                <div class="notice-title">${escapeHTML(item.title)}</div>
+                <div class="notice-header-row">
+                  <div class="notice-title">${escapeHTML(item.title)}</div>
+                  ${deleteBtnHTML}
+                </div>
                 <div class="notice-meta">작성자: <b>${escapeHTML(item.author)}</b> &nbsp;|&nbsp; 작성일: ${item.date}</div>
                 <div class="notice-content">${escapeHTML(item.content)}</div>
               `;
@@ -309,6 +322,34 @@
           document.getElementById('loading-msg').style.display = 'none';
           alert("서버와 통신 중 오류가 발생했습니다.");
           document.getElementById('write-form').style.display = 'block';
+        });
+    }
+
+    // 공지사항 삭제 함수 추가
+    function deleteNotice(title) {
+      if (!confirm(`'${title}' 공지사항을 정말 삭제하시겠습니까?`)) {
+        return;
+      }
+
+      document.getElementById('loading-msg').style.display = 'block';
+
+      // 삭제 API 요청 (제목을 기준으로 삭제)
+      const query = `?action=deleteNotice&role=${currentRole}&title=${encodeURIComponent(title)}`;
+      
+      fetch(API_URL + query)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            alert("삭제되었습니다.");
+            fetchNotices(); // 목록 새로고침
+          } else {
+            document.getElementById('loading-msg').style.display = 'none';
+            alert(data.message || "삭제에 실패했습니다.");
+          }
+        })
+        .catch(err => {
+          document.getElementById('loading-msg').style.display = 'none';
+          alert("서버와 통신 중 오류가 발생했습니다.");
         });
     }
 
