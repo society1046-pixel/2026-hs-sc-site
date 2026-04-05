@@ -192,7 +192,7 @@
         actionBtn.onclick = logout;
       }
 
-      if (currentRole > 1) {
+      if (currentRole >= 32) { // 👉 여기를 32로 변경!
         document.getElementById('btn-show-write').style.display = 'inline-block';
         const userDept = roleNames[currentRole] || "학생";
         document.getElementById('display-author').innerText = `${userName} (${userDept})`;
