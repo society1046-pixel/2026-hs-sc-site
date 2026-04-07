@@ -244,50 +244,78 @@
     
     function goToPage(pageName) { window.location.href = pageName + '.html'; }
 
+    // ★ 렌더링 부분을 별도 함수로 분리 (중복 방지)
+    function renderNoticesUI(list) {
+      const listContainer = document.getElementById('notice-list');
+      listContainer.innerHTML = "";
+
+      if (list && list.length > 0) {
+        list.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'notice-card';
+          
+          const isAuthor = userName && item.author.includes(userName);
+          const isAdmin = currentRole === 45 || currentRole === 46;
+          const canDelete = isAuthor || isAdmin;
+
+          const deleteBtnHTML = canDelete 
+            ? `<button class="btn-danger" onclick="deleteNotice('${escapeHTML(item.title)}')">삭제</button>` 
+            : '';
+
+          card.innerHTML = `
+            <div class="notice-header-row">
+              <div class="notice-title">${escapeHTML(item.title)}</div>
+              ${deleteBtnHTML}
+            </div>
+            <div class="notice-meta">작성자: <b>${escapeHTML(item.author)}</b> &nbsp;|&nbsp; 작성일: ${item.date}</div>
+            <div class="notice-content">${escapeHTML(item.content)}</div>
+          `;
+          listContainer.appendChild(card);
+        });
+      } else {
+        listContainer.innerHTML = `
+          <div class="notice-card" style="text-align:center; color:#A0AEC0; padding: 40px 20px;">
+            현재 등록된 공지사항이 없습니다.
+          </div>`;
+      }
+    }
+
+    // ★ 프론트엔드 캐싱 기법 적용
     function fetchNotices() {
       const loadingMsg = document.getElementById('loading-msg');
       const listContainer = document.getElementById('notice-list');
-      loadingMsg.style.display = 'block';
-      listContainer.innerHTML = "";
 
+      // 1. 브라우저 캐시(sessionStorage)에 저장된 데이터가 있는지 확인
+      const cachedData = sessionStorage.getItem('cachedNoticesList');
+      if (cachedData) {
+        // 캐시가 있다면 로딩 없이 즉시 화면에 그려줌 (체감 속도 0.1초)
+        renderNoticesUI(JSON.parse(cachedData));
+        loadingMsg.style.display = 'none';
+      } else {
+        // 처음 방문해서 캐시가 없을 때만 로딩 문구 표시
+        loadingMsg.style.display = 'block';
+      }
+
+      // 2. 백그라운드에서 최신 데이터를 서버에 한 번 더 요청
       fetch(`${API_URL}?action=getNotices`)
         .then(res => res.json())
         .then(data => {
           loadingMsg.style.display = 'none';
-          if (data.success && data.list.length > 0) {
-            data.list.forEach(item => {
-              const card = document.createElement('div');
-              card.className = 'notice-card';
-              
-              // [수정된 부분] 본인 글이거나 관리자(45, 46)인 경우에만 삭제 버튼 표시
-              const isAuthor = userName && item.author.includes(userName);
-              const isAdmin = currentRole === 45 || currentRole === 46;
-              const canDelete = isAuthor || isAdmin;
-
-              const deleteBtnHTML = canDelete 
-                ? `<button class="btn-danger" onclick="deleteNotice('${escapeHTML(item.title)}')">삭제</button>` 
-                : '';
-
-              card.innerHTML = `
-                <div class="notice-header-row">
-                  <div class="notice-title">${escapeHTML(item.title)}</div>
-                  ${deleteBtnHTML}
-                </div>
-                <div class="notice-meta">작성자: <b>${escapeHTML(item.author)}</b> &nbsp;|&nbsp; 작성일: ${item.date}</div>
-                <div class="notice-content">${escapeHTML(item.content)}</div>
-              `;
-              listContainer.appendChild(card);
-            });
-          } else {
-            listContainer.innerHTML = `
-              <div class="notice-card" style="text-align:center; color:#A0AEC0; padding: 40px 20px;">
-                현재 등록된 공지사항이 없습니다.
-              </div>`;
+          if (data.success) {
+            const newServerData = JSON.stringify(data.list);
+            
+            // 기존에 보여주고 있던 데이터와 서버에서 새로 받은 데이터가 다르다면 화면을 업데이트
+            if (cachedData !== newServerData) {
+              sessionStorage.setItem('cachedNoticesList', newServerData); // 최신 데이터 저장
+              renderNoticesUI(data.list); // 새 데이터로 다시 그리기
+            }
           }
         })
         .catch(err => {
           loadingMsg.style.display = 'none';
-          listContainer.innerHTML = "<p style='text-align:center; color:#F19C99;'>데이터를 불러오는 중 오류가 발생했습니다.</p>";
+          if (!cachedData) { // 캐시도 없고 서버 통신도 실패했을 경우에만 에러 메시지
+            listContainer.innerHTML = "<p style='text-align:center; color:#F19C99;'>데이터를 불러오는 중 오류가 발생했습니다.</p>";
+          }
         });
     }
 
@@ -320,6 +348,9 @@
             alert("공지사항이 등록되었습니다.");
             document.getElementById('notice-title').value = "";
             document.getElementById('notice-content').value = "";
+            
+            // ★ 새 글이 등록되었으므로 로컬 캐시를 삭제하고 새로고침
+            sessionStorage.removeItem('cachedNoticesList'); 
             fetchNotices();
           } else {
             document.getElementById('loading-msg').style.display = 'none';
@@ -334,7 +365,6 @@
         });
     }
 
-    // [수정된 부분] 공지사항 삭제 시 서버로 userName도 함께 전송하여 권한 2차 검증
     function deleteNotice(title) {
       if (!confirm(`'${title}' 공지사항을 정말 삭제하시겠습니까?`)) {
         return;
@@ -342,7 +372,6 @@
 
       document.getElementById('loading-msg').style.display = 'block';
 
-      // userName 파라미터 추가
       const query = `?action=deleteNotice&role=${currentRole}&title=${encodeURIComponent(title)}&userName=${encodeURIComponent(userName)}`;
       
       fetch(API_URL + query)
@@ -350,7 +379,10 @@
         .then(data => {
           if (data.success) {
             alert("삭제되었습니다.");
-            fetchNotices(); // 목록 새로고침
+            
+            // ★ 글이 삭제되었으므로 로컬 캐시를 삭제하고 새로고침
+            sessionStorage.removeItem('cachedNoticesList');
+            fetchNotices();
           } else {
             document.getElementById('loading-msg').style.display = 'none';
             alert(data.message || "삭제에 실패했습니다.");
