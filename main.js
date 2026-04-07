@@ -146,6 +146,12 @@ function fetchRecentNotices() {
     });
 }
 
+// ★ 누락되었던 필수 함수 추가 (오류 방지)
+function escapeHTML(str) {
+  if (!str) return "";
+  return String(str).replace(/[&<>'"]/g, tag => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[tag]));
+}
+
 // 공지사항 리스트를 HTML로 그려주는 헬퍼 함수
 function renderNoticeList(list, container) {
   container.innerHTML = '';
@@ -155,10 +161,13 @@ function renderNoticeList(list, container) {
     const recentNotices = list.slice(0, 3);
     
     recentNotices.forEach(item => {
-      let shortDate = item.date.split(' ')[0] || item.date;
+      // ★ 수정됨: 날짜 데이터가 비어있을 때 에러가 나지 않도록 안전하게 처리
+      let dateText = item.date || "";
+      let shortDate = typeof dateText === 'string' ? dateText.split(' ')[0] : dateText;
+      
       container.innerHTML += `
         <li class="notice-preview-item" onclick="goToPage('info')">
-          <span class="notice-title-text">${escapeHTML(item.title)}</span>
+          <span class="notice-title-text">${escapeHTML(item.title || "제목 없음")}</span>
           <span class="notice-date-text">${shortDate}</span>
         </li>
       `;
