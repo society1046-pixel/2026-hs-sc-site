@@ -113,39 +113,59 @@ function initMain() {
 function fetchRecentNotices() {
   const listContainer = document.getElementById('recent-notice-list');
   
+  // 1. 로컬 스토리지에 저장된 공지사항이 있으면 즉시 화면에 먼저 띄움 (로딩 속도 0초 달성)
+  const cachedNotices = localStorage.getItem('cachedRecentNotices');
+  if (cachedNotices) {
+    try {
+      renderNoticeList(JSON.parse(cachedNotices), listContainer);
+    } catch(e) {
+      console.error("캐시 파싱 에러", e);
+    }
+  } else {
+    // 캐시가 아예 없을 때만 로딩 문구 표시
+    listContainer.innerHTML = `<li style="text-align:center; padding: 20px 0; font-size:13px; color:#A0AEC0;">공지사항을 불러오는 중... ⏳</li>`;
+  }
+
+  // 2. 백그라운드에서 최신 데이터를 서버에 요청
   fetch(`${API_URL}?action=getNotices`, { redirect: 'follow' })
     .then(res => res.json())
     .then(data => {
-      if (data.success && data.list && data.list.length > 0) {
-        listContainer.innerHTML = '';
-        
-        // 최신 데이터가 아래에 쌓이는 경우를 대비해 배열을 뒤집은 후 가장 위 3개를 가져옵니다.
-        // 만약 구글 스크립트에서 이미 최신순으로 정렬해서 준다면 .reverse()는 빼도 됩니다.
-        const recentNotices = data.list.reverse().slice(0, 3);
-        
-        recentNotices.forEach(item => {
-          // 날짜에서 시간 부분은 제외하고 년-월-일만 표시되게 자릅니다.
-          let shortDate = item.date.split(' ')[0] || item.date;
-          listContainer.innerHTML += `
-            <li class="notice-preview-item" onclick="goToPage('info')">
-              <span class="notice-title-text">${escapeHTML(item.title)}</span>
-              <span class="notice-date-text">${shortDate}</span>
-            </li>
-          `;
-        });
-      } else {
-        listContainer.innerHTML = `<li style="text-align:center; padding: 20px 0; font-size:13px; color:#A0AEC0;">최근 등록된 공지사항이 없습니다.</li>`;
+      if (data.success && data.list) {
+        // 새로 받아온 데이터를 로컬 스토리지에 덮어쓰기
+        localStorage.setItem('cachedRecentNotices', JSON.stringify(data.list));
+        // 화면도 최신 데이터로 조용히 업데이트
+        renderNoticeList(data.list, listContainer);
       }
     })
     .catch(err => {
-      listContainer.innerHTML = `<li style="text-align:center; padding: 20px 0; font-size:13px; color:#F19C99;">공지사항을 불러오지 못했습니다.</li>`;
+      console.error("공지사항 통신 에러:", err);
+      // 통신에 실패했는데 캐시된 데이터도 없다면 에러 메시지 표시
+      if (!cachedNotices) {
+        listContainer.innerHTML = `<li style="text-align:center; padding: 20px 0; font-size:13px; color:#F19C99;">공지사항을 불러오지 못했습니다.</li>`;
+      }
     });
 }
 
-// 특수문자 변환용 (XSS 방지)
-function escapeHTML(str) {
-  if (!str) return "";
-  return String(str).replace(/[&<>'"]/g, tag => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[tag]));
+// 공지사항 리스트를 HTML로 그려주는 헬퍼 함수
+function renderNoticeList(list, container) {
+  container.innerHTML = '';
+  
+  if (list && list.length > 0) {
+    // 최신 공지 3개만 자르기 (데이터가 역순으로 온다고 가정)
+    const recentNotices = list.slice(0, 3);
+    
+    recentNotices.forEach(item => {
+      let shortDate = item.date.split(' ')[0] || item.date;
+      container.innerHTML += `
+        <li class="notice-preview-item" onclick="goToPage('info')">
+          <span class="notice-title-text">${escapeHTML(item.title)}</span>
+          <span class="notice-date-text">${shortDate}</span>
+        </li>
+      `;
+    });
+  } else {
+    container.innerHTML = `<li style="text-align:center; padding: 20px 0; font-size:13px; color:#A0AEC0;">최근 등록된 공지사항이 없습니다.</li>`;
+  }
 }
 
 function changeMonth(direction) {
