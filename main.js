@@ -28,7 +28,6 @@ let displayYear = new Date().getFullYear();
 let displayMonth = new Date().getMonth(); 
 
 function initMain() {
-  // 값이 없으면 자동으로 0(비회원)으로 설정합니다.
   currentRole = Number(sessionStorage.getItem('userRole')) || 0; 
   
   const displayId = document.getElementById('display-id');
@@ -36,14 +35,13 @@ function initMain() {
   const menuContainer = document.getElementById('menu-list-container');
   const actionBtn = document.getElementById('action-btn');
 
-  // ★ 비회원(로그인 안 한 상태)일 때 사이드바 설정
+  // 비회원(로그인 안 한 상태)일 때 사이드바 설정
   if (currentRole === 0) {
     displayId.innerText = "로그인이 필요합니다.";
     displayId.style.fontSize = "16px";
     roleDisplay.innerText = "비회원";
     roleDisplay.style.backgroundColor = "#A0AEC0";
     
-    // 메뉴 숨기고 안내문 띄우기 // 비로그인 메뉴 바 설정
     menuContainer.innerHTML = `
       <div class="menu-item" onclick="goToPage('main')"> 메인 화면</div>
       <div class="menu-item" onclick="goToPage('info')">공지사항</div>
@@ -51,12 +49,11 @@ function initMain() {
       <div style="padding: 30px 20px; text-align: center; color: #A0AEC0; font-size: 13px; line-height: 1.5;">더 많은 기능을<br>이용하시려면 로그인해주세요.</div>
     `;
     
-    // 하단 버튼을 '로그인 하러가기'로 변경
     actionBtn.innerText = "로그인";
     actionBtn.style.backgroundColor = "#7BA4DB";
     actionBtn.onclick = function() { window.location.href = 'loginh.html'; };
   } 
-  // ★ 로그인 한 상태일 때 사이드바 설정
+  // 로그인 한 상태일 때 사이드바 설정
   else {
     displayId.innerText = sessionStorage.getItem('userId') + (sessionStorage.getItem('userName') ? ` (${sessionStorage.getItem('userName')})` : "");
     roleDisplay.innerText = roleNames[currentRole] || "권한 미상";
@@ -67,7 +64,6 @@ function initMain() {
     else if (currentRole >= 42 && currentRole <= 44) roleDisplay.style.backgroundColor = "#F687B3"; 
     else if (currentRole >= 45 && currentRole <= 46) roleDisplay.style.backgroundColor = "#F19C99"; 
 
-    // 정상적인 메뉴 보여주기
     menuContainer.innerHTML = `
       <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
       <div class="menu-item" onclick="goToPage('info')">공지사항</div>
@@ -87,11 +83,13 @@ function initMain() {
       </div>
     `;
     
-    // 하단 버튼을 '로그아웃'으로 변경
     actionBtn.innerText = "로그아웃";
     actionBtn.style.backgroundColor = "#F19C99";
     actionBtn.onclick = logout;
   }
+
+  // ★ 추가됨: 메인 화면 로딩 시 최근 공지사항 불러오기
+  fetchRecentNotices();
 
   // 달력 데이터 로딩
   const cachedData = localStorage.getItem('cachedCalendar');
@@ -109,6 +107,45 @@ function initMain() {
         renderCalendar(); 
       } catch (e) { console.error("데이터 로딩 오류"); }
     });
+}
+
+// ★ 추가됨: 최근 공지사항을 가져와서 화면에 출력하는 함수
+function fetchRecentNotices() {
+  const listContainer = document.getElementById('recent-notice-list');
+  
+  fetch(`${API_URL}?action=getNotices`, { redirect: 'follow' })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.list && data.list.length > 0) {
+        listContainer.innerHTML = '';
+        
+        // 최신 데이터가 아래에 쌓이는 경우를 대비해 배열을 뒤집은 후 가장 위 3개를 가져옵니다.
+        // 만약 구글 스크립트에서 이미 최신순으로 정렬해서 준다면 .reverse()는 빼도 됩니다.
+        const recentNotices = data.list.reverse().slice(0, 3);
+        
+        recentNotices.forEach(item => {
+          // 날짜에서 시간 부분은 제외하고 년-월-일만 표시되게 자릅니다.
+          let shortDate = item.date.split(' ')[0] || item.date;
+          listContainer.innerHTML += `
+            <li class="notice-preview-item" onclick="goToPage('info')">
+              <span class="notice-title-text">${escapeHTML(item.title)}</span>
+              <span class="notice-date-text">${shortDate}</span>
+            </li>
+          `;
+        });
+      } else {
+        listContainer.innerHTML = `<li style="text-align:center; padding: 20px 0; font-size:13px; color:#A0AEC0;">최근 등록된 공지사항이 없습니다.</li>`;
+      }
+    })
+    .catch(err => {
+      listContainer.innerHTML = `<li style="text-align:center; padding: 20px 0; font-size:13px; color:#F19C99;">공지사항을 불러오지 못했습니다.</li>`;
+    });
+}
+
+// 특수문자 변환용 (XSS 방지)
+function escapeHTML(str) {
+  if (!str) return "";
+  return String(str).replace(/[&<>'"]/g, tag => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[tag]));
 }
 
 function changeMonth(direction) {
@@ -137,7 +174,6 @@ function renderCalendar() {
     
     let eventHtml = '';
     if (savedEvents[dateString]) {
-      // ★ 수정됨: 달력 네모 칸 안에서 쉼표(,)를 줄바꿈(<br>)으로 변경
       let formattedText = savedEvents[dateString][0].replace(/,/g, '<br>');
       eventHtml = `<div class="event-dot"></div><div class="event-text">${formattedText}</div>`;
     }
@@ -155,10 +191,8 @@ let selectedDateStr = "";
 function dayClicked(year, month, day) {
   selectedDateStr = `${year}-${month}-${day}`;
   
-  // 권한 체크 (0번 비회원도 보기만 가능하도록 처리됨)
   if (!calendarAdmins.includes(currentRole)) {
     if(savedEvents[selectedDateStr] && savedEvents[selectedDateStr].length > 0) {
-        // ★ 수정됨: 일반 사용자용 알림창에서 쉼표(,)를 줄바꿈(\n)으로 변경
         let alertEvents = savedEvents[selectedDateStr].map(ev => ev.replace(/,/g, '\n'));
         alert(`[ ${month}월 ${day}일 일정 ]\n\n` + alertEvents.join('\n\n'));
     }
@@ -171,7 +205,6 @@ function dayClicked(year, month, day) {
   if(savedEvents[selectedDateStr]) {
     savedEvents[selectedDateStr].forEach(ev => {
       let safeText = ev.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-      // ★ 수정됨: 관리자용 모달창에서 쉼표(,)를 줄바꿈(<br>)으로 변경
       let displayText = ev.replace(/,/g, '<br>').replace(/\n/g, '<br>');
       existingHtml += `
         <div class="event-list-item">
@@ -225,35 +258,28 @@ function toggleMenu() {
   sidebar.style.left = sidebar.style.left === "0px" ? "-280px" : "0px";
 }
 
-function toggleSubMenu(menuId) { //토글메뉴
+function toggleSubMenu(menuId) { 
   const subMenu = document.getElementById(menuId);
   subMenu.classList.toggle('show');
 }
 
 function checkPinAndGo(pageName) {
-  // 1. 자바스크립트 내부에 인증번호를 설정해 둡니다. (원하는 대로 숫자를 바꾸세요!)
   const pins = {
-    'sp1': '1234', // A1 페이지의 인증번호
-    'A2': '5678'  // A2 페이지의 인증번호
+    'sp1': '1234', 
+    'A2': '5678'  
   };
 
   const correctPin = pins[pageName];
   
-  // 2. 인증번호가 설정된 페이지인지 확인
   if (correctPin) {
-    // 알림창을 띄워 입력을 받습니다
     const userInput = prompt("접근 권한이 필요합니다.\n인증번호를 입력해주세요:");
-    
-    // 입력한 번호가 맞으면 페이지 이동
     if (userInput === correctPin) {
       goToPage(pageName);
     } 
-    // 취소 버튼을 누르지 않았는데 틀린 경우
     else if (userInput !== null) { 
       alert("인증번호가 일치하지 않습니다.");
     }
   } else {
-    // 만약 pins에 설정해두지 않은 페이지라면 그냥 바로 넘어갑니다
     goToPage(pageName);
   }
 }
@@ -261,7 +287,7 @@ function checkPinAndGo(pageName) {
 function logout() {
   if(confirm('로그아웃 하시겠습니까?')) {
     sessionStorage.clear(); 
-    window.location.reload(); // 로그아웃 시 메인화면 새로고침으로 비회원 전환
+    window.location.reload(); 
   }
 }
 
