@@ -46,6 +46,7 @@ function initMain() {
       <div class="menu-item" onclick="goToPage('main')"> 메인 화면</div>
       <div class="menu-item" onclick="goToPage('info')">공지사항</div>
       <div class="menu-item" onclick="goToPage('scint')"> 학생회 소개</div>
+      <div class="menu-item" onclick="goToPage('splgin')"> 체육대회 페이지</div>
       <div style="padding: 30px 20px; text-align: center; color: #A0AEC0; font-size: 13px; line-height: 1.5;">더 많은 기능을<br>이용하시려면 로그인해주세요.</div>
     `;
     
@@ -74,7 +75,7 @@ function initMain() {
         <div class="menu-item" onclick="goToPage('mettsita')">- 신청 명단</div>
         <div class="menu-item" onclick="goToPage('mettsitat')">- 신청 명단(선생님용)</div>
       </div>
-      
+      <div class="menu-item" onclick="goToPage('splgin')"> 체육대회 페이지</div>
       <div class="menu-item" onclick="toggleSubMenu('studentCouncilMenu')">학생회 ▼</div>
       <div id="studentCouncilMenu" class="sub-menu">
         <div class="menu-item" onclick="checkPinAndGo('sp1')">- 회장단</div>
