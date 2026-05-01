@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>체육대회 로그인 시스템</title>
+  <style>
+    /* 기존 형석고 디자인 스타일 적용 */
+    body { 
+      font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; 
+      background-color: #F4F7FB; 
+      margin: 0; 
+      padding: 0; 
+      color: #4A5568; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      height: 100vh; /* 화면 전체 높이 사용 */
+    }
+    
+    .login-card { 
+      background: white; 
+      padding: 40px 30px; 
+      border-radius: 15px; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+      border: 1px solid #EAF0F6; 
+      width: 100%; 
+      max-width: 320px; 
+      text-align: center; 
+    }
+
+    .login-logo {
+      width: 60px;
+      height: 60px;
+      margin-bottom: 10px;
+    }
+
+    .login-title { 
+      font-size: 22px; 
+      font-weight: bold; 
+      color: #7BA4DB; 
+      margin: 0 0 10px 0; 
+    }
+
+    .login-desc {
+      font-size: 14px;
+      color: #A0AEC0;
+      margin-bottom: 25px;
+      line-height: 1.5;
+    }
+
+    .login-desc strong {
+      color: #F19C99; /* 강조색 */
+    }
+
+    .input-box {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #DCE4EC;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 16px;
+      margin-bottom: 15px;
+      text-align: center;
+      transition: 0.2s;
+    }
+
+    .input-box:focus {
+      outline: none;
+      border-color: #7BA4DB;
+      box-shadow: 0 0 5px rgba(123, 164, 219, 0.3);
+    }
+
+    .login-btn { 
+      background-color: #7BA4DB; 
+      color: white; 
+      border: none; 
+      border-radius: 8px; 
+      padding: 12px; 
+      width: 100%; 
+      font-size: 16px; 
+      font-weight: bold; 
+      cursor: pointer; 
+      transition: 0.2s; 
+    }
+
+    .login-btn:hover { 
+      background-color: #618DC7; 
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-card">
+    <img src="https://drive.google.com/thumbnail?id=1-vFaLyktqvl_ywa0BpiBppSI6lEgsKDd&sz=w200" alt="로고" class="login-logo">
+    <h2 class="login-title">체육대회 시스템 입장</h2>
+    <p class="login-desc">
+      일반학생은 고유번호 <strong>0000</strong>을<br>입력하고 입장해 주세요.
+    </p>
+
+    <input type="text" id="passcodeInput" class="input-box" placeholder="고유번호 4자리 입력" maxlength="4">
+    <button id="loginBtn" class="login-btn">입장하기</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    // 🔴 중요: 여기에 본인의 Firebase 설정값을 붙여넣으세요!
+    const firebaseConfig = {
+        apiKey: "AIzaSyBFuDwM5L_eeHzu1j7gG1Z69GT0wkQXyY8",
+        authDomain: "hshs-sports-day.firebaseapp.com",
+        projectId: "hshs-sports-day",
+        storageBucket: "hshs-sports-day.firebasestorage.app",
+        messagingSenderId: "187838301266",
+        appId: "1:187838301266:web:0af26e391bdf24a3e04b8b",
+        measurementId: "G-JQ9ZPFGCG7"
+    };
+
+    // Firebase 초기화
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 로그인 로직 함수
+    async function handleLogin() {
+      const code = document.getElementById('passcodeInput').value.trim();
+
+      if (!code) {
+        alert("고유번호를 입력해주세요.");
+        return;
+      }
+
+      // 1. 일반학생 (0000) 처리
+      if (code === "0000") {
+        sessionStorage.setItem("role", "student");
+        sessionStorage.setItem("userName", "일반학생");
+        sessionStorage.setItem("userId", "0000");
+        alert("일반학생으로 입장합니다.");
+        window.location.href = "spmain.html"; // 메인 페이지로 이동
+        return;
+      }
+
+      // 2. 관리자/특별 권한 학생 처리 (Firebase 확인)
+      try {
+        const userDocRef = doc(db, "users", code);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          // 세션(브라우저 기억공간)에 권한과 이름 저장
+          sessionStorage.setItem("role", userData.role);
+          sessionStorage.setItem("userName", userData.name);
+          sessionStorage.setItem("userId", code);
+          
+          alert(`${userData.name}님 환영합니다!`);
+          window.location.href = "spmain.html"; // 메인 페이지로 이동
+        } else {
+          alert("존재하지 않는 고유번호입니다. 다시 확인해주세요.");
+        }
+      } catch (error) {
+        console.error("로그인 에러:", error);
+        alert("서버 통신 중 오류가 발생했습니다.");
+      }
+    }
+
+    // 버튼 클릭 시 이벤트 연결
+    document.getElementById('loginBtn').addEventListener('click', handleLogin);
+
+    // 엔터키 쳤을 때도 로그인 되게 하기
+    document.getElementById('passcodeInput').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        handleLogin();
+      }
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>체육대회 대진 및 총합관리</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  
+  <style>
+    body { font-family: 'Apple SD Gothic Neo', sans-serif; background-color: #F7FAFC; margin: 0; padding: 0; color: #2D3748; }
+    .navbar { background-color: #2D3748; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+    .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; }
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #E2E8F0; }
+    
+    /* 탭 디자인 */
+    .tab-title { font-size: 14px; font-weight: bold; color: #4A5568; margin-bottom: 10px; }
+    .tab-group { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab-btn { flex: 1; min-width: 80px; padding: 12px; border: 1px solid #CBD5E0; background: white; border-radius: 8px; cursor: pointer; font-weight: bold; color: #718096; transition: all 0.2s; text-align: center; }
+    .tab-btn.active { background: #3182CE; color: white; border-color: #3182CE; }
+    .sport-btn.active { background: #38A169; color: white; border-color: #38A169; }
+
+    /* 실시간 점수판 */
+    .scoreboard { display: flex; gap: 10px; background: #EBF8FF; padding: 15px; border-radius: 10px; border: 1px solid #90CDF4; margin-bottom: 10px; }
+    .score-item { flex: 1; background: white; padding: 10px; border-radius: 8px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .score-pt { font-size: 18px; font-weight: 900; color: #2B6CB0; margin-top: 4px; }
+    .btn-reset { background: #FC8181; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; }
+
+    /* 배점 설정 */
+    .point-config { background: #FFF5F5; border: 1px solid #FEB2B2; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
+    .point-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .point-box { flex: 1; min-width: 80px; text-align: center; }
+    .point-box label { display: block; font-size: 12px; font-weight: bold; color: #C53030; margin-bottom: 5px; }
+    .point-box input { width: 100%; padding: 8px; border: 1px solid #CBD5E0; border-radius: 6px; text-align: center; font-weight: bold; box-sizing: border-box; }
+
+    /* 대진표 디자인 */
+    .bracket-wrapper { display: flex; flex-direction: column; align-items: center; padding: 30px 20px; background: #EDF2F7; border-radius: 10px; overflow-x: auto; min-width: 600px; }
+    .match-box { background: white; border: 2px solid #CBD5E0; border-radius: 8px; padding: 10px; width: 150px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .match-title { font-size: 11px; color: #718096; margin-bottom: 5px; font-weight: bold; }
+    .team-select, .winner-select, .st-select { width: 100%; padding: 5px; margin: 3px 0; font-size: 12px; font-weight: bold; }
+    .st-select { border: 1px dashed #A0AEC0; color: #4A5568; }
+    .txt-team { font-size: 13px; font-weight: bold; padding: 5px; background: #F7FAFC; border: 1px solid #E2E8F0; margin: 3px 0; height: 18px; }
+    .vert-line { width: 2px; height: 20px; background-color: #A0AEC0; margin: 0 auto; }
+    .branch-down { height: 20px; border-top: 2px solid #A0AEC0; border-left: 2px solid #A0AEC0; border-right: 2px solid #A0AEC0; margin: 0 auto; }
+
+    .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; color: white; transition: 0.2s; }
+    .btn-save { background: #3182CE; }
+    .btn-save:active { transform: scale(0.98); }
+    .btn-rank { background: #805AD5; }
+    .btn-apply { background: #38A169; }
+    
+    .rank-item { flex: 1; text-align: center; }
+    .rank-label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #4A5568; }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <div>체육대회 대진 및 총합 관리기</div>
+  <div>
+    <button onclick="location.href='spmain.html'" style="padding:5px 10px; cursor:pointer; background: transparent; border: 1px solid white; color: white; border-radius: 5px; margin-right: 5px;">메인으로</button>
+    <button onclick="location.href='spbracket.html'" style="padding:5px 10px; cursor:pointer; background: white; border: 1px solid white; color: #2D3748; font-weight:bold; border-radius: 5px;">학생 화면 보기</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card">
+    <div class="tab-title">학년 선택</div>
+    <div class="tab-group" id="gradeTabs">
+      <button class="tab-btn active" onclick="changeGrade('1')">1학년</button>
+      <button class="tab-btn" onclick="changeGrade('2')">2학년</button>
+      <button class="tab-btn" onclick="changeGrade('3')">3학년</button>
+    </div>
+    <div class="tab-title">종목 선택</div>
+    <div class="tab-group" id="sportTabs"></div>
+  </div>
+
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <h3 style="margin:0; font-size:15px; color:#2C5282;"><span id="lblGradeName">1</span>학년별 실시간 종합 점수</h3>
+      <button class="btn-reset" onclick="resetScores()">점수 초기화</button>
+    </div>
+    <div class="scoreboard" id="scoreBoard"></div>
+  </div>
+
+  <div class="card">
+    <div class="point-config">
+      <h4 style="margin:0; color:#E53E3E; font-size: 14px;">🚩 <span id="lblSportPoint">축구</span> 배점 설정 (저장 시 유지됨)</h4>
+      <div class="point-grid">
+        <div class="point-box"><label>1등 점수</label><input type="number" id="p1" value="100"></div>
+        <div class="point-box"><label>2등 점수</label><input type="number" id="p2" value="80"></div>
+        <div class="point-box"><label>3등 점수</label><input type="number" id="p3" value="60"></div>
+        <div class="point-box"><label>4등 점수</label><input type="number" id="p4" value="40"></div>
+        <div class="point-box"><label>5등 점수</label><input type="number" id="p5" value="20"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="overflow-x: auto;">
+    <h3 id="bracketTitle" style="font-size:16px; margin-top:0; color:#2C5282;">대진표 및 전광판 상태 입력</h3>
+    
+    <div class="bracket-wrapper">
+      <div class="match-box" style="border: 2px solid #F6AD55; background: #FFFAF0;">
+        <div class="match-title">우승</div>
+        <div id="champ_display" style="font-size:18px; font-weight:bold; color:#C05621;">미정</div>
+      </div>
+      <div class="vert-line"></div>
+      <div class="match-box">
+        <div class="match-title">결승전</div>
+        <div id="f_t1_txt" class="txt-team">4강 승자</div>
+        <div id="f_t2_txt" class="txt-team">예선2 승자</div>
+        <select id="f_w" class="winner-select" onchange="promote('f')"><option value="">우승자 선택</option></select>
+        <select id="st_f" class="st-select">
+          <option value="waiting">대기(진행전)</option><option value="moving">이동중</option><option value="playing">경기중</option><option value="ended">경기 종료</option>
+        </select>
+      </div>
+      <div class="vert-line"></div>
+      <div class="branch-down" style="width: 250px;"></div>
+      <div style="display: flex; gap: 40px;">
+        <div>
+          <div class="match-box" style="border-color: #4299E1;">
+            <div class="match-title">4강전</div>
+            <div id="s1_t1_txt" class="txt-team">부전승 팀</div>
+            <div id="s1_t2_txt" class="txt-team">예선1 승자</div>
+            <select id="s1_w" class="winner-select" onchange="promote('s1')"></select>
+            <select id="st_s1" class="st-select">
+              <option value="waiting">대기(진행전)</option><option value="moving">이동중</option><option value="playing">경기중</option><option value="ended">경기 종료</option>
+            </select>
+          </div>
+          <div class="vert-line"></div>
+          <div class="branch-down" style="width: 160px;"></div>
+          <div style="display: flex; gap: 10px;">
+            <div class="match-box">
+              <div class="match-title">부전승</div>
+              <select id="bye_t" class="team-select" onchange="updateBye()"></select>
+              <div style="height:35px"></div>
+            </div>
+            <div class="match-box">
+              <div class="match-title">예선 1경기</div>
+              <select id="q1_t1" class="team-select" onchange="updateOptions()"></select>
+              <select id="q1_t2" class="team-select" onchange="updateOptions()"></select>
+              <select id="q1_w" class="winner-select" onchange="promote('q1')"></select>
+              <select id="st_q1" class="st-select">
+                <option value="waiting">대기(진행전)</option><option value="moving">이동중</option><option value="playing">경기중</option><option value="ended">경기 종료</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <div style="flex-grow:1; width:2px; background:#A0AEC0; margin: 0 auto;"></div>
+          <div class="match-box">
+            <div class="match-title">예선 2경기</div>
+            <select id="q2_t1" class="team-select" onchange="updateOptions()"></select>
+            <select id="q2_t2" class="team-select" onchange="updateOptions()"></select>
+            <select id="q2_w" class="winner-select" onchange="promote('q2')"></select>
+            <select id="st_q2" class="st-select">
+              <option value="waiting">대기(진행전)</option><option value="moving">이동중</option><option value="playing">경기중</option><option value="ended">경기 종료</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button id="btnSave" class="btn btn-save" onclick="saveData()">저장하기(입력 후 반드시 누를 것.)</button>
+  </div>
+
+  <div class="card" style="background:#F0FFF4; border: 1px solid #9AE6B4;">
+    <h3 style="margin-top:0; font-size:15px;">점수 합산기(이전에 입력된 점수는 다시 입력하지 마시오.)</h3>
+    <button class="btn btn-rank" onclick="autoRank()">대진표 결과로 등수 자동 채우기</button>
+    <div style="display: flex; gap:10px; margin-top:15px;">
+      <div class="rank-item"><label class="rank-label">1등</label><select id="r1"></select></div>
+      <div class="rank-item"><label class="rank-label">2등</label><select id="r2"></select></div>
+      <div class="rank-item"><label class="rank-label">3등</label><select id="r3"></select></div>
+      <div class="rank-item"><label class="rank-label">4등</label><select id="r4"></select></div>
+      <div class="rank-item"><label class="rank-label">5등</label><select id="r5"></select></div>
+    </div>
+    <button class="btn btn-apply" onclick="applyPoints()">설정한 배점대로 점수판에 합산</button>
+  </div>
+</div>
+
+<script>
+  // 파이어베이스 설정
+  const firebaseConfig = {
+    apiKey: "AIzaSyBFuDwM5L_eeHzu1j7gG1Z69GT0wkQXyY8",
+    authDomain: "hshs-sports-day.firebaseapp.com",
+    projectId: "hshs-sports-day",
+    databaseURL: "https://hshs-sports-day-default-rtdb.firebaseio.com",
+    storageBucket: "hshs-sports-day.firebasestorage.app",
+    messagingSenderId: "187838301266",
+    appId: "1:187838301266:web:0af26e391bdf24a3e04b8b"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let curGrade = "1";
+  let curSport = "";
+  const sports = {
+    "1": ["축구", "배드민턴", "피구", "줄다리기", "계주", "입장식"],
+    "2": ["풋살", "배드민턴", "피구", "줄다리기", "계주", "입장식"],
+    "3": ["축구", "배드민턴", "피구", "줄다리기", "계주"]
+  };
+  let losers = { q1:"", q2:"", s1:"", f:"" };
+
+  function changeGrade(g) {
+    curGrade = g;
+    document.querySelectorAll('#gradeTabs .tab-btn').forEach((btn, idx) => {
+      btn.classList.toggle('active', (idx + 1).toString() === g);
+    });
+    document.getElementById('lblGradeName').innerText = g;
+    renderSports();
+    loadScores();
+  }
+
+  function renderSports() {
+    const container = document.getElementById('sportTabs');
+    container.innerHTML = "";
+    sports[curGrade].forEach((s, idx) => {
+      const btn = document.createElement('button');
+      btn.className = "tab-btn sport-btn" + (idx === 0 ? " active" : "");
+      btn.innerText = s;
+      btn.onclick = () => {
+        document.querySelectorAll('.sport-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        curSport = s;
+        loadData();
+      };
+      container.appendChild(btn);
+    });
+    curSport = sports[curGrade][0];
+    initSelectors();
+    loadData();
+  }
+
+  function initSelectors() {
+    const sels = document.querySelectorAll('.team-select, select[id^="r"]');
+    sels.forEach(s => {
+      s.innerHTML = '<option value="">선택</option>';
+      for(let i=1; i<=5; i++) {
+        s.innerHTML += `<option value="${i}반">${i}반</option>`;
+      }
+    });
+  }
+
+  function loadScores() {
+    db.ref(`scores/grade${curGrade}`).on('value', snap => {
+      const data = snap.val() || {};
+      const container = document.getElementById('scoreBoard');
+      container.innerHTML = "";
+      for(let i=1; i<=5; i++) {
+        const team = i + "반";
+        const score = data[team] || 0;
+        container.innerHTML += `<div class="score-item"><div style="font-size:12px">${team}</div><div class="score-pt">${score}</div></div>`;
+      }
+    });
+  }
+
+  // 전체 점수 0점 초기화 기능
+  function resetScores() {
+    if(!confirm(`정말로 ${curGrade}학년의 모든 반 점수를 0점으로 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다!`)) return;
+    
+    const initialData = { '1반': 0, '2반': 0, '3반': 0, '4반': 0, '5반': 0 };
+    db.ref(`scores/grade${curGrade}`).set(initialData)
+      .then(() => alert('✅ 전체 점수가 0점으로 초기화되었습니다.'))
+      .catch(err => alert('오류 발생: ' + err.message));
+  }
+
+  // 🌟 항목 선택 시 데이터 로딩 (배점 및 전광판 상태 포함)
+  function loadData() {
+    document.getElementById('bracketTitle').innerText = `⚔️ ${curGrade}학년 ${curSport} 결과 입력`;
+    document.getElementById('lblSportPoint').innerText = curSport;
+
+    db.ref(`brackets/grade${curGrade}/${curSport}`).once('value', snap => {
+      const d = snap.val() || {};
+      
+      // 배점 설정 불러오기
+      document.getElementById('p1').value = d.points?.p1 || 100;
+      document.getElementById('p2').value = d.points?.p2 || 80;
+      document.getElementById('p3').value = d.points?.p3 || 60;
+      document.getElementById('p4').value = d.points?.p4 || 40;
+      document.getElementById('p5').value = d.points?.p5 || 20;
+
+      // 대진표 불러오기
+      document.getElementById('q1_t1').value = d.q1?.t1 || "";
+      document.getElementById('q1_t2').value = d.q1?.t2 || "";
+      document.getElementById('q2_t1').value = d.q2?.t1 || "";
+      document.getElementById('q2_t2').value = d.q2?.t2 || "";
+      document.getElementById('bye_t').value = d.s1?.t1 || "";
+      
+      document.getElementById('s1_t1_txt').innerText = d.s1?.t1 || "부전승 팀";
+      document.getElementById('s1_t2_txt').innerText = d.q1?.w || "예선1 승자";
+      document.getElementById('f_t1_txt').innerText = d.s1?.w || "4강 승자";
+      document.getElementById('f_t2_txt').innerText = d.q2?.w || "예선2 승자";
+      document.getElementById('champ_display').innerText = d.champion || "미정";
+      
+      updateOptions();
+      document.getElementById('q1_w').value = d.q1?.w || "";
+      document.getElementById('q2_w').value = d.q2?.w || "";
+      document.getElementById('s1_w').value = d.s1?.w || "";
+      document.getElementById('f_w').value = d.f?.w || "";
+
+      // 상태(전광판용) 불러오기
+      document.getElementById('st_q1').value = d.q1?.status || "waiting";
+      document.getElementById('st_q2').value = d.q2?.status || "waiting";
+      document.getElementById('st_s1').value = d.s1?.status || "waiting";
+      document.getElementById('st_f').value = d.f?.status || "waiting";
+    });
+  }
+
+  // 🌟 저장 함수 (대진표 + 배점 + 전광판 연동)
+  function saveData() {
+    const btn = document.getElementById('btnSave');
+    const champText = document.getElementById('champ_display').innerText;
+
+    const data = {
+      "q1/t1": document.getElementById('q1_t1').value || "",
+      "q1/t2": document.getElementById('q1_t2').value || "",
+      "q1/w": document.getElementById('q1_w').value || "",
+      "q1/status": document.getElementById('st_q1').value || "waiting",
+      
+      "q2/t1": document.getElementById('q2_t1').value || "",
+      "q2/t2": document.getElementById('q2_t2').value || "",
+      "q2/w": document.getElementById('q2_w').value || "",
+      "q2/status": document.getElementById('st_q2').value || "waiting",
+      
+      "s1/t1": document.getElementById('bye_t').value || "",
+      "s1/w": document.getElementById('s1_w').value || "",
+      "s1/status": document.getElementById('st_s1').value || "waiting",
+      
+      "f/w": document.getElementById('f_w').value || "",
+      "f/status": document.getElementById('st_f').value || "waiting",
+      
+      "champion": champText === "미정" ? "" : champText,
+
+      "points/p1": parseInt(document.getElementById('p1').value) || 100,
+      "points/p2": parseInt(document.getElementById('p2').value) || 80,
+      "points/p3": parseInt(document.getElementById('p3').value) || 60,
+      "points/p4": parseInt(document.getElementById('p4').value) || 40,
+      "points/p5": parseInt(document.getElementById('p5').value) || 20
+    };
+    
+    db.ref(`brackets/grade${curGrade}/${curSport}`).update(data)
+      .then(() => {
+        updateLiveBoard(); // 저장 성공 시 전광판 업데이트 실행
+        
+        const originalText = btn.innerText;
+        btn.innerText = "✅ 저장 및 전광판 동기화 완료!";
+        btn.style.background = "#2F855A";
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.style.background = "#3182CE";
+        }, 2000);
+      })
+      .catch((err) => {
+        alert("❌ 오류가 발생했습니다: " + err.message);
+      });
+  }
+
+  // ✈️ 실시간 전광판(FIDS) 데이터 갱신 로직
+  function updateLiveBoard() {
+    db.ref('settings/live_board').once('value', snap => {
+      let board = snap.val() || [];
+      
+      // 1. 현재 학년/종목의 기존 전광판 기록은 일단 지우기
+      board = board.filter(m => m.sport !== `${curGrade}학년 ${curSport}`);
+      
+      // 2. 현재 화면의 4개 경기 중 '이동중' 이거나 '경기중'인 것만 골라내기
+      const matches = [
+        { title: '예선 1경기', t1: document.getElementById('q1_t1').value, t2: document.getElementById('q1_t2').value, st: document.getElementById('st_q1').value },
+        { title: '예선 2경기', t1: document.getElementById('q2_t1').value, t2: document.getElementById('q2_t2').value, st: document.getElementById('st_q2').value },
+        { title: '4강전', t1: document.getElementById('s1_t1_txt').innerText, t2: document.getElementById('s1_t2_txt').innerText, st: document.getElementById('st_s1').value },
+        { title: '결승전', t1: document.getElementById('f_t1_txt').innerText, t2: document.getElementById('f_t2_txt').innerText, st: document.getElementById('st_f').value }
+      ];
+
+      matches.forEach(m => {
+        if((m.st === 'moving' || m.st === 'playing') && m.t1 && m.t2) {
+          board.push({
+            sport: `${curGrade}학년 ${curSport}`,
+            matchup: `${m.title} (${m.t1} vs ${m.t2})`,
+            status: m.st
+          });
+        }
+      });
+
+      // 3. 파이어베이스에 최종 전광판 배열 덮어쓰기
+      db.ref('settings/live_board').set(board);
+    });
+  }
+
+  // 나머지 로직 (동일)
+  function updateBye() {
+    document.getElementById('s1_t1_txt').innerText = document.getElementById('bye_t').value || "부전승 팀";
+    updateOptions();
+  }
+
+  function updateOptions() {
+    const helper = (id, t1, t2) => {
+      const el = document.getElementById(id); const cur = el.value;
+      el.innerHTML = '<option value="">승자 선택</option>';
+      [t1, t2].forEach(t => { if(t && !t.includes("승자") && !t.includes("팀")) el.innerHTML += `<option value="${t}">${t}</option>`; });
+      el.value = cur;
+    };
+    helper('q1_w', document.getElementById('q1_t1').value, document.getElementById('q1_t2').value);
+    helper('q2_w', document.getElementById('q2_t1').value, document.getElementById('q2_t2').value);
+    helper('s1_w', document.getElementById('s1_t1_txt').innerText, document.getElementById('s1_t2_txt').innerText);
+    helper('f_w', document.getElementById('f_t1_txt').innerText, document.getElementById('f_t2_txt').innerText);
+  }
+
+  function promote(m) {
+    const win = document.getElementById(m+'_w').value;
+    if(m==='q1') {
+      document.getElementById('s1_t2_txt').innerText = win || "예선1 승자";
+      const t1=document.getElementById('q1_t1').value, t2=document.getElementById('q1_t2').value;
+      losers.q1 = win==t1 ? t2 : t1;
+    } else if(m==='q2') {
+      document.getElementById('f_t2_txt').innerText = win || "예선2 승자";
+      const t1=document.getElementById('q2_t1').value, t2=document.getElementById('q2_t2').value;
+      losers.q2 = win==t1 ? t2 : t1;
+    } else if(m==='s1') {
+      document.getElementById('f_t1_txt').innerText = win || "4강 승자";
+      const t1=document.getElementById('s1_t1_txt').innerText, t2=document.getElementById('s1_t2_txt').innerText;
+      losers.s1 = win==t1 ? t2 : t1;
+    } else if(m==='f') {
+      document.getElementById('champ_display').innerText = win || "미정";
+      const t1=document.getElementById('f_t1_txt').innerText, t2=document.getElementById('f_t2_txt').innerText;
+      losers.f = win==t1 ? t2 : t1;
+    }
+    updateOptions();
+  }
+
+  function autoRank() {
+    document.getElementById('r1').value = document.getElementById('champ_display').innerText;
+    document.getElementById('r2').value = losers.f || "";
+    document.getElementById('r3').value = losers.s1 || "";
+    document.getElementById('r4').value = losers.q1 || "";
+    document.getElementById('r5').value = losers.q2 || "";
+  }
+
+  function applyPoints() {
+    if(!confirm('점수를 합산하시겠습니까?')) return;
+    const pts = [
+      parseInt(document.getElementById('p1').value),
+      parseInt(document.getElementById('p2').value),
+      parseInt(document.getElementById('p3').value),
+      parseInt(document.getElementById('p4').value),
+      parseInt(document.getElementById('p5').value)
+    ];
+    for(let i=1; i<=5; i++) {
+      const team = document.getElementById('r'+i).value;
+      if(team && team !== "미정" && team !== "") {
+        db.ref(`scores/grade${curGrade}/${team}`).transaction(cv => (cv || 0) + pts[i-1]);
+      }
+    }
+    alert('합산 완료!');
+  }
+
+  window.onload = () => changeGrade('1');
+</script>
+</body>
+</html>

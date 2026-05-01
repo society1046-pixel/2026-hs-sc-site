@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>체육대회 - 호출 관리</title>
+  <style>
+    body { font-family: 'Apple SD Gothic Neo', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; }
+    .navbar { background-color: #F19C99; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+    .container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
+    .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #718096; }
+    select, input { width: 100%; padding: 12px; border: 1px solid #DCE4EC; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+    
+    .send-btn { width: 100%; padding: 15px; background-color: #F19C99; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+    
+    /* 호출 목록 디자인 */
+    .call-item { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #F19C99; display: flex; justify-content: space-between; align-items: center; }
+    .call-info b { color: #2D3748; font-size: 15px; }
+    .call-info p { margin: 3px 0 0; font-size: 13px; color: #718096; }
+    
+    .btn-group { display: flex; gap: 5px; }
+    .arrive-btn { background-color: #48BB78; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    .del-btn { background-color: #FED7D7; color: #C53030; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    .status-badge { background-color: #E2E8F0; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 5px; display: inline-block; }
+  </style>
+</head>
+<body>
+
+  <div class="navbar">
+    <button onclick="location.href='spmain.html'" style="background:none; border:1px solid white; color:white; border-radius:5px; cursor:pointer;">◀ 메인</button>
+    <b style="font-size:18px;">호출 송출 및 관리</b>
+    <div style="width:50px;"></div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="form-group">
+        <label>대상 (학년/반)</label>
+        <div style="display:flex; gap:5px;">
+          <select id="grade"><option value="1">1학년</option><option value="2">2학년</option><option value="3">3학년</option><option value="0">전체</option></select>
+          <select id="classNum"><option value="1">1반</option><option value="2">2반</option><option value="3">3반</option><option value="4">4반</option><option value="5">5반</option><option value="0">전체</option></select>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>장소</label>
+        <select id="locationSelect">
+          <option value="운동장">운동장</option>
+          <option value="풋살장">풋살장</option>
+          <option value="축구장">축구장</option>
+          <option value="other">기타 (직접 입력)</option>
+        </select>
+        <input type="text" id="locationInput" placeholder="직접 장소를 입력하세요" style="display: none; margin-top: 8px;">
+      </div>
+
+      <div class="form-group">
+        <label>시간</label>
+        <input type="time" id="dueTime">
+      </div>
+      <button class="send-btn" id="sendBtn">송출하기</button>
+    </div>
+
+    <h3 style="font-size:15px; color:#4A5568;">최근 호출 관리</h3>
+    <div id="callList"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    // 🔴 본인 Firebase 설정값 입력
+    const firebaseConfig = {
+        apiKey: "AIzaSyBFuDwM5L_eeHzu1j7gG1Z69GT0wkQXyY8",
+        authDomain: "hshs-sports-day.firebaseapp.com",
+        projectId: "hshs-sports-day",
+        storageBucket: "hshs-sports-day.firebasestorage.app",
+        messagingSenderId: "187838301266",
+        appId: "1:187838301266:web:0af26e391bdf24a3e04b8b",
+        measurementId: "G-JQ9ZPFGCG7"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const userName = sessionStorage.getItem("userName");
+    const userId = sessionStorage.getItem("userId");
+
+    // 기타 장소 선택 시 입력칸 표시
+    document.getElementById("locationSelect").addEventListener("change", (e) => {
+      document.getElementById("locationInput").style.display = e.target.value === "other" ? "block" : "none";
+    });
+
+    // 1. 송출 기능
+    document.getElementById("sendBtn").addEventListener("click", async () => {
+      const g = document.getElementById("grade").value;
+      const c = document.getElementById("classNum").value;
+      const time = document.getElementById("dueTime").value;
+      
+      let loc = document.getElementById("locationSelect").value;
+      if (loc === "other") loc = document.getElementById("locationInput").value;
+
+      if(!loc || !time) return alert("장소와 시간을 모두 입력하세요.");
+
+      await addDoc(collection(db, "calls"), {
+        targetGrade: Number(g),
+        targetClass: Number(c),
+        location: loc,
+        dueTime: time,
+        callerName: userName,
+        callerId: userId,
+        isArrived: false, // 새로 추가: 도착 여부
+        createdAt: serverTimestamp()
+      });
+      alert("호출 송출 완료");
+    });
+
+    // 2. 실시간 목록 렌더링
+    const q = query(collection(db, "calls"), orderBy("createdAt", "desc"));
+    onSnapshot(q, (snapshot) => {
+      const listDiv = document.getElementById("callList");
+      listDiv.innerHTML = "";
+      snapshot.forEach((callDoc) => {
+        const d = callDoc.data();
+        const target = (d.targetGrade == 0 ? "전학년" : d.targetGrade+"학년") + " " + (d.targetClass == 0 ? "전체" : d.targetClass+"반");
+        
+        const statusHTML = d.isArrived 
+          ? `<div class="status-badge" style="background:#C6F6D5; color:#22543D;">도착 확인됨</div>`
+          : `<div class="status-badge" style="background:#FEEBC8; color:#7B341E;">도착 대기중</div>`;
+
+        listDiv.innerHTML += `
+          <div class="call-item" style="${d.isArrived ? 'border-color:#48BB78; opacity:0.7;' : ''}">
+            <div class="call-info">
+              ${statusHTML}<br>
+              <b>${target} → ${d.location}</b>
+              <p>${d.dueTime}까지 | 발신: ${d.callerName}</p>
+            </div>
+            <div class="btn-group">
+              ${!d.isArrived ? `<button class="arrive-btn" onclick="markArrived('${callDoc.id}')">도착</button>` : ''}
+              <button class="del-btn" onclick="deleteCall('${callDoc.id}')">삭제</button>
+            </div>
+          </div>
+        `;
+      });
+    });
+
+    // 도착 처리 함수
+    window.markArrived = async (id) => {
+      if(confirm("도착 완료로 변경하시겠습니까?")) {
+        await updateDoc(doc(db, "calls", id), { isArrived: true });
+      }
+    };
+
+    // 삭제 함수
+    window.deleteCall = async (id) => {
+      if(confirm("목록에서 완전히 삭제하시겠습니까?")) {
+        await deleteDoc(doc(db, "calls", id));
+      }
+    };
+  </script>
+</body>
+</html>

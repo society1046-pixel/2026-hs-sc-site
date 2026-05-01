@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>체육대회 메인</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  
+  <style>
+    /* 1. 원본 디자인 시스템 그대로 유지 */
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
+    .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; padding: 0; }
+    .nav-center { display: flex; align-items: center; justify-content: center; }
+    .nav-title { font-size: 20px; font-weight: bold; margin: 0; }
+    
+    .sidebar { height: 100%; width: 280px; position: fixed; top: 0; left: -280px; background-color: white; box-shadow: 4px 0 15px rgba(0,0,0,0.05); transition: 0.3s; z-index: 1000; display: flex; flex-direction: column; }
+    .sidebar-header { background-color: #FAFCFF; padding: 30px 20px 20px; border-bottom: 1px solid #EAF0F6; position: relative; }
+    .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; border: none; background: none; color: #A0AEC0; }
+    .user-name-text { font-size: 20px; font-weight: bold; color: #2D3748; margin: 0 0 8px 0; }
+    .user-role-badge { display: inline-block; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: bold; }
+    
+    .menu-list { padding: 10px 0; flex-grow: 1; overflow-y: auto; }
+    .menu-item { padding: 15px 25px; display: block; color: #7BA4DB; font-weight: bold; text-decoration: none; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; }
+    .menu-item:hover { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; }
+    
+    .action-btn { margin: 20px; padding: 12px 20px; background-color: #A0AEC0; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); }
+    
+    .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+    .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; margin-bottom: 25px; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #F4F7FB; padding-bottom: 12px; margin-bottom: 15px; }
+    .card-header h3 { margin: 0; color: #4A5568; }
+    
+    .schedule-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; }
+    .schedule-table th { background-color: #EAF0F6; padding: 12px; color: #4A5568; font-weight: bold; }
+    .schedule-table td { padding: 12px; border-bottom: 1px dashed #EAF0F6; }
+    .time-col { font-weight: bold; color: #7BA4DB; }
+
+    .edit-btn { background-color: #F19C99; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: bold; display: none; }
+
+    /* 전광판 디자인 (LIVE & RECORD) */
+    .airport-board { background-color: #1A202C; border-radius: 12px; padding: 15px; margin-bottom: 25px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); border: 4px solid #2D3748; overflow-x: auto; }
+    .board-table { width: 100%; border-collapse: collapse; min-width: 500px; }
+    .board-table th { color: #A0AEC0; font-size: 12px; font-weight: normal; text-transform: uppercase; padding-bottom: 10px; border-bottom: 1px solid #4A5568; text-align: left; }
+    .board-table td { padding: 12px 0; border-bottom: 1px solid #2D3748; font-family: 'Courier New', Courier, monospace; font-weight: bold; font-size: 16px; }
+    
+    .led-time { color: #F6AD55; }
+    .led-sport { color: #E2E8F0; }
+    .led-match { color: #63B3ED; }
+    
+    .status-badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 14px; min-width: 70px; text-align: center; }
+    .st-waiting { color: #A0AEC0; border: 1px solid #A0AEC0; }
+    .st-moving { color: #1A202C; background-color: #F6E05E; }
+    .st-playing { color: white; background-color: #48BB78; animation: blink 1.5s infinite; }
+    .st-ended { color: #FC8181; border: 1px solid #FC8181; opacity: 0.8; } /* 종료 스타일: 기록처럼 남겨둠 */
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; }
+    .modal-card { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; }
+  </style>
+</head>
+<body>
+
+  <div class="navbar">
+    <button class="menu-btn" id="openMenuBtn">☰</button>
+    <div class="nav-center"><p class="nav-title">체육대회 메인</p></div>
+    <div style="width: 24px;"></div> 
+  </div>
+
+  <div id="mySidebar" class="sidebar">
+    <div class="sidebar-header">
+      <button class="close-btn" id="closeMenuBtn">×</button>
+      <h3 class="user-name-text" id="display-name">불러오는 중...</h3>
+      <span class="user-role-badge" id="display-role">권한 로딩...</span>
+    </div>
+    <div class="menu-list" id="menu-list-container">
+      <a href="spbracket.html" class="menu-item">학년별 대진표 보기</a>
+      </div>
+    <button id="logoutBtn" class="action-btn">로그아웃</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h3>일정표</h3>
+        <button id="editScheduleBtn" class="edit-btn">수정</button>
+      </div>
+      <table class="schedule-table">
+        <thead>
+          <tr><th>시간</th><th>일정 내용</th></tr>
+        </thead>
+        <tbody id="scheduleTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card-header" style="margin-top: 35px;">
+      <h3 style="font-weight: bold; color: #2D3748;">실시간 경기 현황판</h3>
+    </div>
+    <div class="airport-board">
+      <table class="board-table">
+        <thead>
+          <tr>
+            <th style="width: 15%;">TIME</th>
+            <th style="width: 20%;">SPORT</th>
+            <th style="width: 45%;">MATCH / TEAM</th>
+            <th style="width: 20%; text-align: right;">STATUS</th>
+          </tr>
+        </thead>
+        <tbody id="boardTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="scheduleModal" class="modal-overlay">
+    <div class="modal-card">
+      <h3>시간표 수정</h3>
+      <textarea id="scheduleInput" style="width: 100%; height: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; resize: none;"></textarea>
+      <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button id="saveScheduleBtn" style="flex: 1; padding: 12px; background: #7BA4DB; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">저장</button>
+        <button onclick="document.getElementById('scheduleModal').style.display='none'" style="flex: 1; padding: 12px; background: #eee; border: none; border-radius: 8px; cursor: pointer;">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. 파이어베이스 초기 설정
+    const firebaseConfig = {
+      apiKey: "AIzaSyBFuDwM5L_eeHzu1j7gG1Z69GT0wkQXyY8",
+      authDomain: "hshs-sports-day.firebaseapp.com",
+      projectId: "hshs-sports-day",
+      databaseURL: "https://hshs-sports-day-default-rtdb.firebaseio.com",
+      storageBucket: "hshs-sports-day.firebasestorage.app",
+      messagingSenderId: "187838301266",
+      appId: "1:187838301266:web:0af26e391bdf24a3e04b8b"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // 2. 권한 시스템 (선생님의 원본 로직 100% 복구)
+    const role = sessionStorage.getItem("role"); 
+    const userName = sessionStorage.getItem("userName");
+    if (!role) { location.href = "splgin.html"; }
+
+    const nameDisplay = document.getElementById("display-name");
+    const roleBadge = document.getElementById("display-role");
+    const menuContainer = document.getElementById("menu-list-container");
+    const editScheduleBtn = document.getElementById("editScheduleBtn");
+
+    if (role === "student") {
+      nameDisplay.textContent = userName + " 학생";
+      roleBadge.textContent = "일반 학생";
+      roleBadge.style.backgroundColor = "#A0AEC0";
+    } 
+    else if (role === "president" || role === "vice_president") {
+      nameDisplay.textContent = userName + (role === "president" ? " (반장)" : " (부반장)");
+      roleBadge.textContent = "학급 임원";
+      roleBadge.style.backgroundColor = "#F6AD55";
+      menuContainer.innerHTML += `<a href="spcall_view.html" class="menu-item" style="color: #F6AD55;">호출 알림 시스템</a>`;
+    } 
+    else if (role === "teacher" || role === "referee" || role === "admin") {
+      let roleText = (role === "teacher") ? " 선생님" : (role === "referee" ? " (심판)" : " (관리자)");
+      nameDisplay.textContent = userName + roleText;
+      roleBadge.textContent = "시스템 관리자";
+      roleBadge.style.backgroundColor = "#F19C99";
+      
+      // 관리자용 모든 메뉴 복구
+      menuContainer.innerHTML += `<a href="spadminbra.html" class="menu-item" style="color: #E53E3E;">대진표 및 배점 관리</a>`;
+      menuContainer.innerHTML += `<a href="spcall_view.html" class="menu-item" style="color: #F6AD55;">호출 알림 시스템</a>`;
+      menuContainer.innerHTML += `<a href="spcall.html" class="menu-item" style="color: #F19C99;">호출 송출 및 관리</a>`;
+      if (role === "admin") {
+        menuContainer.innerHTML += `<a href="spadmin.html" class="menu-item" style="color: #2D3748;">사용자 계정 관리</a>`;
+      }
+      editScheduleBtn.style.display = "block"; 
+    }
+
+    // 3. 시간표(Timetable) 실시간 연동
+    db.ref('settings/timetable_raw').on('value', snap => {
+      const rawText = snap.val() || "";
+      document.getElementById('scheduleInput').value = rawText;
+      const tbody = document.getElementById('scheduleTableBody');
+      tbody.innerHTML = "";
+      rawText.split('\n').forEach(line => {
+        const p = line.split(',');
+        if (p.length >= 2) {
+          tbody.innerHTML += `<tr><td class="time-col">${p[0].trim()}</td><td>${p.slice(1).join(',').trim()}</td></tr>`;
+        }
+      });
+    });
+
+    document.getElementById("saveScheduleBtn").onclick = () => {
+      db.ref('settings/timetable_raw').set(document.getElementById('scheduleInput').value).then(() => {
+        alert("시간표가 저장되었습니다.");
+        document.getElementById('scheduleModal').style.display = 'none';
+      });
+    };
+    editScheduleBtn.onclick = () => document.getElementById('scheduleModal').style.display = 'flex';
+
+    // 4. 전광판 실시간 연동 (종료 경기 기록 보존)
+    db.ref('settings/live_board').on('value', snap => {
+      const data = snap.val() || [];
+      const tbody = document.getElementById('boardTableBody');
+      tbody.innerHTML = "";
+      
+      if(data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#A0AEC0; padding:20px;">일정이 없습니다.</td></tr>`;
+        return;
+      }
+
+      data.forEach(m => {
+        let stLabel = "대기중", stClass = "st-waiting";
+        if(m.status === 'playing') { stLabel = "경기중"; stClass = "st-playing"; }
+        else if(m.status === 'moving') { stLabel = "이동중"; stClass = "st-moving"; }
+        else if(m.status === 'ended') { stLabel = "종료"; stClass = "st-ended"; }
+
+        tbody.innerHTML += `
+          <tr>
+            <td class="led-time">${m.time}</td>
+            <td class="led-sport">${m.sport}</td>
+            <td class="led-match">${m.matchup}</td>
+            <td style="text-align:right;"><span class="status-badge ${stClass}">${stLabel}</span></td>
+          </tr>`;
+      });
+    });
+
+    // 5. 사이드바 및 로그아웃
+    document.getElementById("openMenuBtn").onclick = () => document.getElementById("mySidebar").style.left = "0";
+    document.getElementById("closeMenuBtn").onclick = () => document.getElementById("mySidebar").style.left = "-280px";
+    document.getElementById("logoutBtn").onclick = () => { sessionStorage.clear(); location.href = "splgin.html"; };
+  </script>
+</body>
+</html>
