@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>점수 상세 내역 조회 및 관리</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  
+  <style>
+    body { font-family: 'Apple SD Gothic Neo', sans-serif; background-color: #F7FAFC; margin: 0; padding: 0; color: #2D3748; }
+    .navbar { background-color: #4A5568; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+    .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; }
+    
+    .tab-group { display: flex; gap: 8px; margin-bottom: 20px; }
+    .tab-btn { flex: 1; padding: 12px; border: 1px solid #CBD5E0; background: white; border-radius: 8px; cursor: pointer; font-weight: bold; color: #718096; text-align: center; }
+    .tab-btn.active { background: #4A5568; color: white; border-color: #4A5568; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; }
+    .class-title { font-size: 18px; font-weight: bold; color: #2B6CB0; margin-bottom: 15px; border-bottom: 2px solid #EBF8FF; padding-bottom: 8px; display: flex; justify-content: space-between;}
+    
+    .detail-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .detail-table th { text-align: left; padding: 8px; color: #718096; border-bottom: 1px solid #EDF2F7; }
+    .detail-table td { padding: 10px 8px; border-bottom: 1px solid #F7FAFC; vertical-align: middle; }
+    .point-val { font-weight: bold; color: #2D3748; text-align: right; }
+    
+    .total-row { background: #F7FAFC; font-weight: bold; }
+    .no-data { color: #A0AEC0; text-align: center; padding: 20px; font-size: 14px; }
+
+    /* 관리자용 버튼 스타일 */
+    .action-btns { display: inline-flex; gap: 5px; margin-left: 10px; }
+    .btn-edit { background: #3182CE; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
+    .btn-delete { background: #E53E3E; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
+    .admin-badge { background: #F6AD55; color: white; font-size: 12px; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <div>
+    📊 종목별 점수 상세 내역 
+    <span id="adminBadge" class="admin-badge" style="display:none; margin-left:10px;">관리자 모드</span>
+  </div>
+  <div>
+    <button onclick="location.href='spmain.html'" style="padding:5px 10px; cursor:pointer; background: transparent; border: 1px solid white; color: white; font-weight:bold; border-radius: 5px; margin-right:5px;">메인으로</button>
+    <button onclick="location.href='spadminbra.html'" style="padding:5px 10px; cursor:pointer; background: white; border: none; color: #4A5568; font-weight:bold; border-radius: 5px;">관리자 페이지</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="tab-group">
+    <button class="tab-btn active" onclick="loadDetails('1')">1학년</button>
+    <button class="tab-btn" onclick="loadDetails('2')">2학년</button>
+    <button class="tab-btn" onclick="loadDetails('3')">3학년</button>
+  </div>
+
+  <div id="detailGrid" class="grid">
+    </div>
+</div>
+
+<script>
+  // 1. 파이어베이스 설정
+  const firebaseConfig = {
+    apiKey: "AIzaSyBFuDwM5L_eeHzu1j7gG1Z69GT0wkQXyY8",
+    authDomain: "hshs-sports-day.firebaseapp.com",
+    projectId: "hshs-sports-day",
+    databaseURL: "https://hshs-sports-day-default-rtdb.firebaseio.com",
+    storageBucket: "hshs-sports-day.firebasestorage.app",
+    messagingSenderId: "187838301266",
+    appId: "1:187838301266:web:0af26e391bdf24a3e04b8b"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // 2. 권한 확인 (학생은 읽기 전용, 선생님/심판/관리자는 수정 가능)
+  const role = sessionStorage.getItem("role");
+  const isManager = (role === "teacher" || role === "referee" || role === "admin");
+  
+  if(isManager) {
+    document.getElementById("adminBadge").style.display = "inline-block";
+  }
+
+  let currentGrade = '1';
+
+  // 3. 데이터 불러오기 및 그리기
+  function loadDetails(grade) {
+    currentGrade = grade;
+    document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+      btn.classList.toggle('active', (idx + 1).toString() === grade);
+    });
+
+    const grid = document.getElementById('detailGrid');
+    
+    db.ref(`score_details/grade${grade}`).on('value', snap => {
+      const data = snap.val() || {};
+      grid.innerHTML = "";
+
+      for(let i=1; i<=5; i++) {
+        const className = i + "반";
+        const scores = data[className] || {}; 
+        
+        let html = `
+          <div class="card">
+            <div class="class-title"><span>${grade}학년 ${className}</span></div>
+            <table class="detail-table">
+              <thead>
+                <tr><th>종목명</th><th style="text-align:right;">득점</th></tr>
+              </thead>
+              <tbody>
+        `;
+
+        let total = 0;
+        const sportKeys = Object.keys(scores);
+
+        if(sportKeys.length === 0) {
+          html += `<tr><td colspan="2" class="no-data">기록된 점수가 없습니다.</td></tr>`;
+        } else {
+          sportKeys.forEach(sport => {
+            const pt = scores[sport];
+            total += pt;
+            
+            // 🔥 관리자일 경우에만 수정/삭제 버튼 추가
+            let actionHtml = "";
+            if(isManager) {
+              actionHtml = `
+                <div class="action-btns">
+                  <button onclick="editScore('${grade}', '${className}', '${sport}', ${pt})" class="btn-edit">수정</button>
+                  <button onclick="deleteScore('${grade}', '${className}', '${sport}')" class="btn-delete">삭제</button>
+                </div>
+              `;
+            }
+
+            html += `
+              <tr>
+                <td>${sport}</td>
+                <td class="point-val">
+                  ${pt.toLocaleString()}점 
+                  ${actionHtml}
+                </td>
+              </tr>
+            `;
+          });
+        }
+
+        html += `
+              </tbody>
+              <tfoot>
+                <tr class="total-row">
+                  <td>총합</td>
+                  <td class="point-val" style="color:#E53E3E;">${total.toLocaleString()}점</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        `;
+        grid.innerHTML += html;
+      }
+    });
+  }
+
+  // 4. [관리자 전용] 점수 수정 기능
+  function editScore(grade, team, sport, currentPt) {
+    const input = prompt(`[${grade}학년 ${team}] ${sport} 종목의 점수를 수정합니다.\n새로운 점수를 입력하세요:`, currentPt);
+    
+    if (input === null) return; // 취소 누름
+    const newPt = parseInt(input);
+    
+    if (isNaN(newPt)) {
+      alert("숫자만 입력해 주세요.");
+      return;
+    }
+
+    // 상세 내역 업데이트 후, 총점 재계산 실행
+    db.ref(`score_details/grade${grade}/${team}/${sport}`).set(newPt)
+      .then(() => syncTotalScore(grade, team))
+      .then(() => alert('수정되었습니다.'));
+  }
+
+  // 5. [관리자 전용] 점수 삭제 기능
+  function deleteScore(grade, team, sport) {
+    if(!confirm(`정말로 [${grade}학년 ${team}]의 ${sport} 점수를 삭제하시겠습니까?\n메인 전광판의 총점에서도 차감됩니다.`)) return;
+
+    // 상세 내역 삭제 후, 총점 재계산 실행
+    db.ref(`score_details/grade${grade}/${team}/${sport}`).remove()
+      .then(() => syncTotalScore(grade, team))
+      .then(() => alert('삭제되었습니다.'));
+  }
+
+  // 6. ⭐️ 핵심: 상세내역 변동 시 메인 총점 동기화
+  function syncTotalScore(grade, team) {
+    // 1) 해당 반의 모든 상세 점수를 다시 읽어옴
+    return db.ref(`score_details/grade${grade}/${team}`).once('value').then(snap => {
+      const details = snap.val() || {};
+      let newTotal = 0;
+      
+      // 2) 상세 점수들을 모두 더함
+      Object.values(details).forEach(pt => {
+        newTotal += pt;
+      });
+
+      // 3) 계산된 새 총점을 메인 scores 데이터베이스에 덮어쓰기
+      return db.ref(`scores/grade${grade}/${team}`).set(newTotal);
+    });
+  }
+
+  // 초기 실행
+  window.onload = () => loadDetails('1');
+</script>
+</body>
+</html>
