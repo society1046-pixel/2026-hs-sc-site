@@ -177,6 +177,7 @@
   </div>
 </div>
 
+
 <script>
   // 파이어베이스 설정
   const firebaseConfig = {
@@ -355,14 +356,20 @@
   }
 
   // ✈️ 실시간 전광판(FIDS) 데이터 갱신 로직
-  function updateLiveBoard() {
+// ✈️ 실시간 전광판(FIDS) 데이터 갱신 로직 (철통 방어 버전)
+function updateLiveBoard() {
     db.ref('settings/live_board').once('value', snap => {
       let board = snap.val() || [];
       
-      // 1. 현재 학년/종목의 기존 전광판 기록은 일단 지우기
+      // 1. 현재 학년/종목의 기존 전광판 기록 지우기
       board = board.filter(m => m.sport !== `${curGrade}학년 ${curSport}`);
       
-      // 2. 현재 화면의 4개 경기 중 '이동중' 이거나 '경기중'인 것만 골라내기
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const exactTime = `${hours}:${minutes}`;
+
+      // 2. 4개 경기 상태 가져오기
       const matches = [
         { title: '예선 1경기', t1: document.getElementById('q1_t1').value, t2: document.getElementById('q1_t2').value, st: document.getElementById('st_q1').value },
         { title: '예선 2경기', t1: document.getElementById('q2_t1').value, t2: document.getElementById('q2_t2').value, st: document.getElementById('st_q2').value },
@@ -371,16 +378,25 @@
       ];
 
       matches.forEach(m => {
-        if((m.st === 'moving' || m.st === 'playing') && m.t1 && m.t2) {
+        // 🔥 핵심 수정: 'waiting'(대기중)이 아니면서 팀 이름이 빈칸이 아닐 때 "무조건" 보냅니다!
+        if(m.st !== 'waiting' && m.t1 && m.t2 && m.t1.trim() !== '' && m.t2.trim() !== '') {
+          
+          let finalStatus = m.st;
+          // 혹시 HTML 콤보박스 값이 'end'나 '종료'로 되어있더라도 'ended'로 강제 변환해서 에러 방지
+          if(finalStatus === 'end' || finalStatus === '종료') {
+            finalStatus = 'ended';
+          }
+
           board.push({
             sport: `${curGrade}학년 ${curSport}`,
             matchup: `${m.title} (${m.t1} vs ${m.t2})`,
-            status: m.st
+            status: finalStatus,
+            time: exactTime
           });
         }
       });
 
-      // 3. 파이어베이스에 최종 전광판 배열 덮어쓰기
+      // 3. 파이어베이스에 덮어쓰기
       db.ref('settings/live_board').set(board);
     });
   }
@@ -435,21 +451,30 @@
   }
 
   function applyPoints() {
-    if(!confirm('점수를 합산하시겠습니까?')) return;
+    if(!confirm(`[${curSport}] 종목의 점수를 합산하시겠습니까?\n(주의: 이전에 합산한 적이 있다면 점수가 중복으로 올라갈 수 있습니다.)`)) return;
+    
     const pts = [
-      parseInt(document.getElementById('p1').value),
-      parseInt(document.getElementById('p2').value),
-      parseInt(document.getElementById('p3').value),
-      parseInt(document.getElementById('p4').value),
-      parseInt(document.getElementById('p5').value)
+      parseInt(document.getElementById('p1').value) || 0,
+      parseInt(document.getElementById('p2').value) || 0,
+      parseInt(document.getElementById('p3').value) || 0,
+      parseInt(document.getElementById('p4').value) || 0,
+      parseInt(document.getElementById('p5').value) || 0
     ];
+
     for(let i=1; i<=5; i++) {
       const team = document.getElementById('r'+i).value;
       if(team && team !== "미정" && team !== "") {
-        db.ref(`scores/grade${curGrade}/${team}`).transaction(cv => (cv || 0) + pts[i-1]);
+        const earnedPoint = pts[i-1];
+
+        // 1. [핵심 추가] 종목별 상세 점수를 파이어베이스에 명확히 기록합니다.
+        // 경로: score_details/grade1/1반/축구 = 100
+        db.ref(`score_details/grade${curGrade}/${team}/${curSport}`).set(earnedPoint);
+
+        // 2. [기존 로직 유지] 메인 전광판용 총합 점수도 올려줍니다.
+        db.ref(`scores/grade${curGrade}/${team}`).transaction(cv => (cv || 0) + earnedPoint);
       }
     }
-    alert('합산 완료!');
+    alert(`${curSport} 종목의 상세 점수 기록 및 총점 합산이 완료되었습니다!`);
   }
 
   window.onload = () => changeGrade('1');
