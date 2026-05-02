@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>형석고 체육대회 종합 전광판</title>
+  <style>
+    /* 전체 배경 및 폰트 설정 */
+    body { font-family: 'Apple SD Gothic Neo', sans-serif; background-color: #0B0F1A; margin: 0; color: #F9FAFB; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+    .navbar { background-color: #111827; padding: 12px; text-align: center; font-size: 18px; font-weight: 900; border-bottom: 1px solid #1F2937; color: #7BA4DB; letter-spacing: 1px; }
+    
+    /* 슬라이드 컨테이너 */
+    .view-container { flex: 1; position: relative; overflow: hidden; padding: 10px; }
+    .slide-view { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 15px 30px; opacity: 0; transition: opacity 0.8s ease-in-out; pointer-events: none; }
+    .slide-view.active { opacity: 1; pointer-events: auto; }
+
+    .view-title { font-size: 22px; font-weight: 900; margin-bottom: 15px; text-align: center; color: #E5E7EB; }
+
+    /* 공통 테이블 (경기현황, 일정표) */
+    .content-box { background: #111827; border-radius: 12px; border: 1px solid #1F2937; width: 100%; max-width: 1100px; margin: 0 auto; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: 16px; }
+    th { background: #1F2937; color: #9CA3AF; padding: 12px; text-align: center; border-bottom: 2px solid #374151; font-weight: 600; }
+    td { padding: 12px; border-bottom: 1px solid #1F2937; text-align: center; font-weight: bold; }
+
+    .status-playing { color: #10B981; animation: blink 1.5s infinite; }
+    .status-moving { color: #F59E0B; }
+    .status-ended { color: #EF4444; opacity: 0.6; }
+
+    /* 🏆 통합 점수판 스타일 */
+    .score-container { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 1100px; margin: 0 auto; overflow-y: auto; height: 100%; padding-right: 10px; }
+    .grade-section { background: rgba(17, 24, 39, 0.5); border-radius: 12px; padding: 15px; border: 1px solid #1F2937; }
+    .grade-title { font-size: 18px; color: #60A5FA; font-weight: 800; margin-bottom: 10px; display: flex; align-items: center; }
+    .grade-title::before { content: ''; display: inline-block; width: 4px; height: 18px; background: #3B82F6; margin-right: 8px; border-radius: 2px; }
+    
+    .score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+    .score-card { background: #111827; border: 1px solid #374151; border-radius: 8px; padding: 12px; text-align: center; }
+    .class-name { font-size: 15px; color: #D1D5DB; margin-bottom: 5px; font-weight: bold; }
+    .class-score { font-size: 26px; color: #FCD34D; font-weight: 900; }
+
+    /* 🎙️ 호출 페이지 스타일 */
+    .call-list { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 1100px; margin: 0 auto; overflow-y: auto; }
+    .call-item { background: #111827; padding: 18px 25px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 8px solid #F59E0B; border: 1px solid #1F2937; border-left-width: 8px; }
+    .call-item.arrived { border-left-color: #10B981; opacity: 0.5; }
+    .call-text { font-size: 20px; font-weight: bold; color: #F9FAFB; }
+    .call-sub { font-size: 15px; color: #9CA3AF; margin-top: 6px; }
+    .call-status { font-size: 16px; font-weight: 900; }
+
+    /* 🚨 호출 팝업 (디자인 수정: 어둡고 불투명하게) */
+    .call-overlay { 
+      position: fixed; inset: 0; 
+      background: rgba(10, 15, 26, 0.98); /* 아주 어둡고 거의 불투명한 배경 */
+      z-index: 9999; display: none; flex-direction: column; 
+      justify-content: center; align-items: center; text-align: center; 
+      color: #F9FAFB; /* 글자색 흰색 계열로 변경 */
+    }
+    .alert-target { font-size: 80px; font-weight: 900; margin-bottom: 30px; color: #FCD34D; } /* 강조색 노란색 */
+    .alert-info { font-size: 50px; font-weight: 800; line-height: 1.4; }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    .start-screen { position: fixed; inset: 0; background: #0B0F1A; z-index: 10000; display: flex; align-items: center; justify-content: center; }
+    .start-btn { background: #F9FAFB; color: #0B0F1A; border: none; padding: 15px 40px; border-radius: 10px; font-size: 18px; font-weight: 900; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div id="startScreen" class="start-screen">
+    <button class="start-btn" id="startBtn">전광판 시작하기</button>
+  </div>
+
+  <div id="callOverlay" class="call-overlay">
+    <div id="alertTarget" class="alert-target">-</div>
+    <div id="alertInfo" class="alert-info">-</div>
+  </div>
+
+  <div class="navbar">형석고 체육대회 종합 전광판</div>
+
+  <div class="view-container">
+    
+    <div id="viewCall" class="slide-view active">
+      <div class="view-title">호출 현황</div>
+      <div class="call-list" id="callQueueArea"></div>
+    </div>
+
+    <div id="viewMatch" class="slide-view">
+      <div class="view-title">실시간 경기 현황</div>
+      <div class="content-box">
+        <table>
+          <thead><tr><th>시간</th><th>종목</th><th>대진</th><th>상태</th></tr></thead>
+          <tbody id="matchBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="viewScore" class="slide-view">
+      <div class="view-title">학년별 반 총점 현황</div>
+      <div class="score-container">
+        <div class="grade-section"><div class="grade-title">1학년</div><div class="score-grid" id="scoreGrid1"></div></div>
+        <div class="grade-section"><div class="grade-title">2학년</div><div class="score-grid" id="scoreGrid2"></div></div>
+        <div class="grade-section"><div class="grade-title">3학년</div><div class="score-grid" id="scoreGrid3"></div></div>
+      </div>
+    </div>
+
+    <div id="viewSchedule" class="slide-view">
+      <div class="view-title">일정표</div>
+      <div class="content-box">
+        <table>
+          <thead><tr><th style="width:30%">시간</th><th>진행 내용</th></tr></thead>
+          <tbody id="scheduleBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBFuDwM5L_eeHzu1j7gG1Z69GT0wkQXyY8",
+      authDomain: "hshs-sports-day.firebaseapp.com",
+      projectId: "hshs-sports-day",
+      databaseURL: "https://hshs-sports-day-default-rtdb.firebaseio.com",
+      storageBucket: "hshs-sports-day.firebasestorage.app",
+      appId: "1:187838301266:web:0af26e391bdf24a3e04b8b"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const dbFirestore = getFirestore(app);
+    const dbRealtime = getDatabase(app);
+
+    const views = ['viewCall', 'viewMatch', 'viewScore', 'viewSchedule'];
+    let currentIdx = 0;
+    let slideTimer;
+
+    function startSlideshow() {
+      if(slideTimer) clearInterval(slideTimer);
+      slideTimer = setInterval(() => {
+        document.getElementById(views[currentIdx]).classList.remove('active');
+        currentIdx = (currentIdx + 1) % views.length;
+        document.getElementById(views[currentIdx]).classList.add('active');
+      }, 10000);
+    }
+
+    document.getElementById("startBtn").addEventListener("click", () => {
+      document.getElementById("startScreen").style.display = "none";
+      const welcome = new SpeechSynthesisUtterance('시스템 가동을 시작합니다.');
+      welcome.lang = 'ko-KR';
+      window.speechSynthesis.speak(welcome);
+      
+      startSlideshow();
+      initRealtimeData();
+    });
+
+    function initRealtimeData() {
+      let isFirst = true;
+      let playedIds = new Set();
+
+      onSnapshot(query(collection(dbFirestore, "calls"), orderBy("createdAt", "desc")), (snap) => {
+        const queueArea = document.getElementById('callQueueArea');
+        let html = "";
+        snap.forEach(doc => {
+          const d = doc.data();
+          const targetStr = (d.targetGrade == 0 ? "전학년" : d.targetGrade + "학년") + " " + (d.targetClass == 0 ? "전체반" : d.targetClass + "반");
+          html += `
+            <div class="call-item ${d.isArrived ? 'arrived' : ''}">
+              <div><div class="call-text">${targetStr} → ${d.location}</div><div class="call-sub">${d.dueTime}까지 모여주세요</div></div>
+              <div class="call-status" style="color:${d.isArrived ? '#10B981' : '#F59E0B'}">${d.isArrived ? '도착완료' : '이동중'}</div>
+            </div>`;
+        });
+        queueArea.innerHTML = html || "<div style='text-align:center; color:#6B7280; padding:30px;'>진행 중인 호출이 없습니다.</div>";
+
+        if(!isFirst) {
+          snap.docChanges().forEach(change => {
+            if(change.type === "added") {
+              const data = change.doc.data();
+              const cid = change.doc.id;
+              if (!playedIds.has(cid)) { playedIds.add(cid); triggerEmergency(data); }
+            }
+          });
+        }
+        isFirst = false;
+      });
+
+      onValue(ref(dbRealtime, 'settings/live_board'), snap => {
+        const data = snap.val() || [];
+        document.getElementById('matchBody').innerHTML = data.map(m => {
+          let stClass = "status-ended", stText = "종료";
+          if(m.status === 'playing' || m.status === '경기중') { stClass = "status-playing"; stText = "경기중"; }
+          else if(m.status === 'moving' || m.status === '이동중') { stClass = "status-moving"; stText = "이동중"; }
+          return `<tr><td style="color:#F59E0B">${m.time || '--:--'}</td><td style="color:#D1D5DB">${m.sport}</td><td style="color:#60A5FA">${m.matchup}</td><td class="${stClass}">${stText}</td></tr>`;
+        }).join('');
+      });
+
+      onValue(ref(dbRealtime, 'scores'), snap => {
+        const data = snap.val() || {};
+        for(let g=1; g<=3; g++) {
+          const grid = document.getElementById(`scoreGrid${g}`);
+          const gradeData = data[`grade${g}`] || {};
+          const teams = Object.keys(gradeData).sort();
+          grid.innerHTML = teams.length ? teams.map(team => `<div class="score-card"><div class="class-name">${team}</div><div class="class-score">${gradeData[team]}</div></div>`).join('') : `<div style="color:#6B7280; font-size:14px;">기록 없음</div>`;
+        }
+      });
+
+      onValue(ref(dbRealtime, 'settings/timetable_raw'), snap => {
+        const raw = snap.val() || "";
+        document.getElementById('scheduleBody').innerHTML = raw.split('\n').map(line => {
+          const p = line.split(',');
+          return p.length >= 2 ? `<tr><td style="color:#60A5FA">${p[0].trim()}</td><td style="text-align:left">${p.slice(1).join(',').trim()}</td></tr>` : '';
+        }).join('');
+      });
+    }
+
+    function triggerEmergency(data) {
+      clearInterval(slideTimer);
+      const targetStr = (data.targetGrade == 0 ? "전학년" : data.targetGrade + "학년") + " " + (data.targetClass == 0 ? "전체반" : data.targetClass + "반");
+      document.getElementById('alertTarget').innerText = targetStr;
+      document.getElementById('alertInfo').innerHTML = `<span style="color:#60A5FA;">${data.location}</span>(으)로<br>${data.dueTime}까지 모여주세요`;
+      
+      const overlay = document.getElementById('callOverlay');
+      overlay.style.display = 'flex';
+
+      // "신속히" 단어 삭제됨
+      const msg = new SpeechSynthesisUtterance(`${targetStr}, ${data.location}으로 ${data.dueTime}까지 모여주세요.`);
+      msg.lang = 'ko-KR';
+      window.speechSynthesis.speak(msg);
+
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        views.forEach(id => document.getElementById(id).classList.remove('active'));
+        currentIdx = 0; 
+        document.getElementById(views[currentIdx]).classList.add('active');
+        startSlideshow();
+      }, 8000);
+    }
+  </script>
+</body>
+</html>
