@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 작업 로그</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: 'Apple SD Gothic Neo', sans-serif; background-color: #F7FAFC; margin: 0; padding: 0; color: #2D3748; }
+    .navbar { background-color: #2C5282; color: white; padding: 15px 20px; font-weight: bold; font-size: 18px; }
+    .container { max-width: 1000px; margin: 30px auto; padding: 0 15px; }
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #E2E8F0; }
+    th { background-color: #EDF2F7; font-weight: bold; color: #4A5568; }
+    tr:hover { background-color: #F7FAFC; }
+    
+    .tag { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; }
+    .tag-reset { background-color: #E53E3E; }
+    .tag-save { background-color: #3182CE; }
+    .tag-apply { background-color: #38A169; }
+  </style>
+</head>
+<body>
+
+<div class="navbar">🛠️ 체육대회 관리자 작업 보안 로그</div>
+
+<div class="container">
+  <div class="card">
+    <h3 style="margin-top: 0; color: #2D3748;">실시간 로그 기록 (최신순)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 15%;">발생 일시</th>
+          <th style="width: 15%;">작업자</th>
+          <th style="width: 15%;">작업 종류</th>
+          <th style="width: 55%;">상세 내용</th>
+        </tr>
+      </thead>
+      <tbody id="logBody">
+        <tr><td colspan="4" style="text-align:center; padding: 20px; color: #A0AEC0;">로그를 불러오는 중입니다...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // 파이어베이스 설정 (선생님 코드와 동일)
+  const firebaseConfig = {
+    apiKey: "AIzaSyBFuDwM5L_eeHzu1j7gG1Z69GT0wkQXyY8",
+    authDomain: "hshs-sports-day.firebaseapp.com",
+    projectId: "hshs-sports-day",
+    databaseURL: "https://hshs-sports-day-default-rtdb.firebaseio.com",
+    storageBucket: "hshs-sports-day.firebasestorage.app",
+    messagingSenderId: "187838301266",
+    appId: "1:187838301266:web:0af26e391bdf24a3e04b8b"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  function formatTime(timestamp) {
+    const d = new Date(timestamp);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    return `${mm}-${dd} ${hh}:${min}:${ss}`;
+  }
+
+  function getTagColor(action) {
+    if(action.includes("초기화")) return "tag-reset";
+    if(action.includes("저장")) return "tag-save";
+    if(action.includes("합산")) return "tag-apply";
+    return "tag-save"; // 기본값
+  }
+
+  // 로그 데이터 실시간 불러오기 (최신순 정렬을 위해 데이터를 배열에 담아 뒤집음)
+  db.ref('admin_logs').orderByChild('timestamp').limitToLast(50).on('value', snap => {
+    const logBody = document.getElementById('logBody');
+    logBody.innerHTML = '';
+    
+    if (!snap.exists()) {
+      logBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: #A0AEC0;">기록된 로그가 없습니다.</td></tr>';
+      return;
+    }
+
+    const logs = [];
+    snap.forEach(childSnap => {
+      logs.push(childSnap.val());
+    });
+    logs.reverse(); // 최신 데이터가 위로 오도록 배열 순서 뒤집기
+
+    logs.forEach(log => {
+      const timeStr = formatTime(log.timestamp);
+      const tagClass = getTagColor(log.action);
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="color: #718096;">${timeStr}</td>
+        <td style="font-weight: bold;">👤 ${log.user || '알 수 없음'}</td>
+        <td><span class="tag ${tagClass}">${log.action}</span></td>
+        <td>${log.detail}</td>
+      `;
+      logBody.appendChild(tr);
+    });
+  });
+</script>
+</body>
+</html>
