@@ -56,7 +56,10 @@
 <body>
 
 <div class="navbar">
-  <div>체육대회 대진 및 총합 관리기</div>
+  <div>
+    체육대회 대진 및 총합 관리기 
+    <span id="adminDisplay" style="font-size: 12px; margin-left: 15px; color: #A0AEC0;">로그인 정보 없음</span>
+  </div>
   <div>
     <button onclick="location.href='spmain.html'" style="padding:5px 10px; cursor:pointer; background: transparent; border: 1px solid white; color: white; border-radius: 5px; margin-right: 5px;">메인으로</button>
     <button onclick="location.href='spbracket.html'" style="padding:5px 10px; cursor:pointer; background: white; border: 1px solid white; color: #2D3748; font-weight:bold; border-radius: 5px;">학생 화면 보기</button>
@@ -176,8 +179,6 @@
     <button class="btn btn-apply" onclick="applyPoints()">설정한 배점대로 점수판에 합산</button>
   </div>
 </div>
-
-
 <script>
   // 파이어베이스 설정
   const firebaseConfig = {
@@ -191,6 +192,25 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
+
+  // ---------------- [추가된 기능: 세션 연동 및 로그 기록] ----------------
+  const adminName = sessionStorage.getItem("userName") || "알 수 없음";
+  const userRole = sessionStorage.getItem("role") || "알 수 없음";
+  
+  // 상단에 접속자 정보 띄우기
+  document.getElementById('adminDisplay').innerText = `👤 접속자: ${adminName}`;
+
+  function writeAdminLog(actionType, details) {
+    const logRef = db.ref('admin_logs').push();
+    logRef.set({
+      user: adminName,
+      role: userRole,
+      action: actionType,
+      detail: details,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+  }
+  // ----------------------------------------------------------------------
 
   let curGrade = "1";
   let curSport = "";
@@ -260,7 +280,11 @@
     
     const initialData = { '1반': 0, '2반': 0, '3반': 0, '4반': 0, '5반': 0 };
     db.ref(`scores/grade${curGrade}`).set(initialData)
-      .then(() => alert('✅ 전체 점수가 0점으로 초기화되었습니다.'))
+      .then(() => {
+        alert('✅ 전체 점수가 0점으로 초기화되었습니다.');
+        // [로그 기록 추가]
+        writeAdminLog("점수 초기화", `${curGrade}학년 전체 점수를 0점으로 강제 초기화함`);
+      })
       .catch(err => alert('오류 발생: ' + err.message));
   }
 
@@ -342,6 +366,9 @@
       .then(() => {
         updateLiveBoard(); // 저장 성공 시 전광판 업데이트 실행
         
+        // [로그 기록 추가]
+        writeAdminLog("대진/전광판 저장", `${curGrade}학년 [${curSport}] 대진표, 배점, 전광판 상태를 저장함`);
+        
         const originalText = btn.innerText;
         btn.innerText = "✅ 저장 및 전광판 동기화 완료!";
         btn.style.background = "#2F855A";
@@ -355,9 +382,8 @@
       });
   }
 
-  // ✈️ 실시간 전광판(FIDS) 데이터 갱신 로직
-// ✈️ 실시간 전광판(FIDS) 데이터 갱신 로직 (철통 방어 버전)
-function updateLiveBoard() {
+  // ✈️ 실시간 전광판(FIDS) 데이터 갱신 로직 (철통 방어 버전)
+  function updateLiveBoard() {
     db.ref('settings/live_board').once('value', snap => {
       let board = snap.val() || [];
       
@@ -401,7 +427,6 @@ function updateLiveBoard() {
     });
   }
 
-  // 나머지 로직 (동일)
   function updateBye() {
     document.getElementById('s1_t1_txt').innerText = document.getElementById('bye_t').value || "부전승 팀";
     updateOptions();
@@ -467,17 +492,32 @@ function updateLiveBoard() {
         const earnedPoint = pts[i-1];
 
         // 1. [핵심 추가] 종목별 상세 점수를 파이어베이스에 명확히 기록합니다.
-        // 경로: score_details/grade1/1반/축구 = 100
         db.ref(`score_details/grade${curGrade}/${team}/${curSport}`).set(earnedPoint);
 
         // 2. [기존 로직 유지] 메인 전광판용 총합 점수도 올려줍니다.
         db.ref(`scores/grade${curGrade}/${team}`).transaction(cv => (cv || 0) + earnedPoint);
       }
     }
+    
+    // [로그 기록 추가]
+    writeAdminLog("점수 합산", `${curGrade}학년 [${curSport}] 대진 결과를 점수판에 최종 합산함`);
+    
     alert(`${curSport} 종목의 상세 점수 기록 및 총점 합산이 완료되었습니다!`);
   }
 
-  window.onload = () => changeGrade('1');
+  window.onload = () => {
+    // ---------------- [추가된 기능: 권한 검사] ----------------
+    // 역할이 없거나, 일반학생(student)으로 들어온 경우 관리자 페이지 접근 차단
+    if (userRole === "알 수 없음" || userRole === "student") {
+      alert("⚠️ 관리자 권한이 없습니다. 관리자 고유번호로 로그인 후 이용해주세요.");
+      // 아래 경로는 실제 사용 중인 로그인 페이지 파일명(예: splogin.html)으로 맞춰주세요.
+      location.href = "splgin.html"; 
+      return; 
+    }
+    // --------------------------------------------------------
+    
+    changeGrade('1');
+  };
 </script>
 </body>
 </html>
