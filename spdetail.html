@@ -57,7 +57,6 @@
   <div id="detailGrid" class="grid">
     </div>
 </div>
-
 <script>
   // 1. 파이어베이스 설정
   const firebaseConfig = {
@@ -74,11 +73,25 @@
 
   // 2. 권한 확인 (학생은 읽기 전용, 선생님/심판/관리자는 수정 가능)
   const role = sessionStorage.getItem("role");
+  const userName = sessionStorage.getItem("userName") || "알 수 없음"; // 로그용 이름 추가
   const isManager = (role === "teacher" || role === "referee" || role === "admin");
   
   if(isManager) {
     document.getElementById("adminBadge").style.display = "inline-block";
   }
+
+  // ---------------- [추가된 기능: 로그 기록용 함수] ----------------
+  function writeAdminLog(actionType, details) {
+    const logRef = db.ref('admin_logs').push();
+    logRef.set({
+      user: userName,
+      role: role || "알 수 없음",
+      action: actionType,
+      detail: details,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+  }
+  // ----------------------------------------------------------------
 
   let currentGrade = '1';
 
@@ -173,7 +186,11 @@
     // 상세 내역 업데이트 후, 총점 재계산 실행
     db.ref(`score_details/grade${grade}/${team}/${sport}`).set(newPt)
       .then(() => syncTotalScore(grade, team))
-      .then(() => alert('수정되었습니다.'));
+      .then(() => {
+        alert('수정되었습니다.');
+        // [로그 기능 추가됨] 점수 수정 완료 후 로그 기록
+        writeAdminLog("상세 점수 수정", `[${grade}학년 ${team}] ${sport} 점수를 ${currentPt}점에서 ${newPt}점으로 변경함`);
+      });
   }
 
   // 5. [관리자 전용] 점수 삭제 기능
@@ -183,7 +200,11 @@
     // 상세 내역 삭제 후, 총점 재계산 실행
     db.ref(`score_details/grade${grade}/${team}/${sport}`).remove()
       .then(() => syncTotalScore(grade, team))
-      .then(() => alert('삭제되었습니다.'));
+      .then(() => {
+        alert('삭제되었습니다.');
+        // [로그 기능 추가됨] 점수 삭제 완료 후 로그 기록
+        writeAdminLog("상세 점수 삭제", `[${grade}학년 ${team}] ${sport} 점수 기록을 삭제함`);
+      });
   }
 
   // 6. ⭐️ 핵심: 상세내역 변동 시 메인 총점 동기화
