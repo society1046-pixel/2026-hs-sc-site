@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체육대회 종합 메인화면</title>
+  <title>체육대회 메인 메뉴</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -68,7 +68,7 @@
 
   <div class="navbar">
     <button class="menu-btn" id="openMenuBtn">☰</button>
-    <div class="nav-title">체육대회 종합 메인</div>
+    <div class="nav-title">체육대회 메인 메뉴</div>
     <div style="width: 24px;"></div> 
   </div>
 
@@ -79,7 +79,6 @@
       <span class="user-role-badge" id="display-role">권한 로딩...</span>
     </div>
     <div class="menu-list" id="menu-list-container">
-      <a href="main.html" class="menu-item">학생회 사이트</a>
       <a href="spbracket.html" class="menu-item">학년별 대진표 보기</a>
       <a href="spdetail.html" class="menu-item">상세 점수 확인</a>
       <a href="spcom.html" class="menu-item">통합 확인</a>
@@ -144,7 +143,6 @@
       </div>
     </div>
   </div>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBFuDwM5L_eeHzu1j7gG1Z69GT0wkQXyY8",
@@ -166,6 +164,21 @@
     const roleBadge = document.getElementById("display-role");
     const menuContainer = document.getElementById("menu-list-container");
     const editScheduleBtn = document.getElementById("editScheduleBtn");
+
+    // ---------------- [추가된 기능: 로그 기록용 함수] ----------------
+    function writeAdminLog(actionType, details) {
+      const adminName = sessionStorage.getItem("userName") || "알 수 없음";
+      const userRole = sessionStorage.getItem("role") || "알 수 없음";
+      const logRef = db.ref('admin_logs').push();
+      logRef.set({
+        user: adminName,
+        role: userRole,
+        action: actionType,
+        detail: details,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+    // ----------------------------------------------------------------
 
     // 🔥 삭제되었던 권한별 메뉴 추가 로직 100% 원상복구!
     if (role === "student") {
@@ -190,6 +203,7 @@
       menuContainer.innerHTML += `<a href="spcall.html" class="menu-item" style="color: #F19C99;">호출 송출 및 관리</a>`;
       if (role === "admin") {
         menuContainer.innerHTML += `<a href="spadmin.html" class="menu-item" style="color: #2D3748;">사용자 계정 관리</a>`;
+        menuContainer.innerHTML += `<a href="spadmin_log.html" class="menu-item" style="color: #2D3748;">사용자 로그 관리</a>`;
       }
       editScheduleBtn.style.display = "block"; 
     }
@@ -210,12 +224,18 @@
       });
     });
 
+    // 🌟 시간표 저장 시 로그가 기록되도록 수정 (기존 로직 유지)
     document.getElementById("saveScheduleBtn").onclick = () => {
       db.ref('settings/timetable_raw').set(document.getElementById('scheduleInput').value).then(() => {
         alert("시간표가 저장되었습니다.");
+        
+        // [로그 기능 추가됨]
+        writeAdminLog("시간표 수정", "메인 대시보드에서 전체 시간표를 수정 및 저장했습니다.");
+        
         document.getElementById('scheduleModal').style.display = 'none';
       });
     };
+    
     editScheduleBtn.onclick = () => document.getElementById('scheduleModal').style.display = 'flex';
 
     // ✈️ 전광판 연동 (종료 데이터 판별 강화)
