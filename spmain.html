@@ -39,8 +39,34 @@
     /* 일정표 디자인 */
     .schedule-table th { background-color: #EAF0F6; color: #4A5568; font-weight: bold; font-size: 14px; border-radius: 6px 6px 0 0; text-align: center; }
     .schedule-table td { border-bottom: 1px solid #F0F4F8; font-size: 15px; text-align: center; }
-    .schedule-table td:nth-child(2) { text-align: left; padding-left: 15px; }
+    /* 말줄임표 방해 방지를 위해 clip 적용, padding 제거 */
+    .schedule-table td:nth-child(2) { text-align: left; padding: 0; text-overflow: clip; } 
     .time-col { font-weight: bold; color: #7BA4DB; }
+
+    /* --- 수정됨: 조건부 한방향 텍스트 애니메이션 설정 --- */
+    .scroll-wrap {
+      width: 100%;
+      overflow: hidden;
+      white-space: nowrap;
+      padding: 12px 15px;
+      box-sizing: border-box;
+      position: relative;
+    }
+    .scroll-text {
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .scroll-text.moving {
+      animation: scrollLeft 6s linear infinite;
+    }
+    .scroll-wrap:hover .scroll-text.moving {
+      animation-play-state: paused;
+    }
+    @keyframes scrollLeft {
+      0%, 15% { transform: translateX(0); }
+      85%, 100% { transform: translateX(var(--scroll-dist)); }
+    }
+    /* ---------------------------------------------------- */
 
     /* 전광판 디자인 */
     .airport-board { background-color: #1A202C; border-radius: 12px; padding: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); border: 4px solid #2D3748; height: 100%; }
@@ -181,7 +207,6 @@
     }
     // ----------------------------------------------------------------
 
-    // 🔥 삭제되었던 권한별 메뉴 추가 로직 100% 원상복구!
     if (role === "student") {
       nameDisplay.textContent = userName + " 학생";
       roleBadge.textContent = "일반 학생";
@@ -209,6 +234,29 @@
       editScheduleBtn.style.display = "block"; 
     }
 
+    // --- 애니메이션 적용 함수 분리 (재사용 및 정확한 계산을 위함) ---
+    function applyScrollAnimation() {
+      document.querySelectorAll('.scroll-wrap').forEach(wrap => {
+        const textEl = wrap.querySelector('.scroll-text');
+        textEl.classList.remove('moving'); // 기존 애니메이션 초기화
+        
+        // wrap 컨테이너의 순수 텍스트 표시 공간 (좌우 패딩 30px 제외)
+        const availableWidth = wrap.clientWidth - 30;
+        
+        // 텍스트 실제 길이가 표시 공간보다 클 때만 움직임
+        if (textEl.scrollWidth > availableWidth) {
+          // 텍스트 끝까지 전부 보일 수 있도록 이동 거리 계산 (약간의 여유공간 20px 추가)
+          const distance = textEl.scrollWidth - availableWidth + 20;
+          textEl.style.setProperty('--scroll-dist', `-${distance}px`);
+          textEl.classList.add('moving');
+        }
+      });
+    }
+    
+    // 화면(창) 크기가 조절될 때마다 길이를 재계산해서 고장나지 않도록 방어
+    window.addEventListener('resize', applyScrollAnimation);
+    // -------------------------------------------------------------
+
     // 📅 시간표 연동
     db.ref('settings/timetable_raw').on('value', snap => {
       const rawText = snap.val() || "";
@@ -220,26 +268,34 @@
         if (p.length >= 2) {
           const timeText = p[0].trim();
           const contentText = p.slice(1).join(',').trim();
-          tbody.innerHTML += `<tr><td class="time-col" title="${timeText}">${timeText}</td><td title="${contentText}">${contentText}</td></tr>`;
+          
+          tbody.innerHTML += `
+            <tr>
+              <td class="time-col" title="${timeText}">${timeText}</td>
+              <td title="${contentText}">
+                <div class="scroll-wrap">
+                  <div class="scroll-text">${contentText}</div>
+                </div>
+              </td>
+            </tr>`;
         }
       });
+
+      // 브라우저가 화면에 표를 다 그리고 난 뒤에 길이를 계산하도록 0.3초(300ms) 여유를 줍니다.
+      setTimeout(applyScrollAnimation, 300);
     });
 
-    // 🌟 시간표 저장 시 로그가 기록되도록 수정 (기존 로직 유지)
     document.getElementById("saveScheduleBtn").onclick = () => {
       db.ref('settings/timetable_raw').set(document.getElementById('scheduleInput').value).then(() => {
         alert("시간표가 저장되었습니다.");
-        
-        // [로그 기능 추가됨]
         writeAdminLog("시간표 수정", "메인 대시보드에서 전체 시간표를 수정 및 저장했습니다.");
-        
         document.getElementById('scheduleModal').style.display = 'none';
       });
     };
     
     editScheduleBtn.onclick = () => document.getElementById('scheduleModal').style.display = 'flex';
 
-    // ✈️ 전광판 연동 (종료 데이터 판별 강화)
+    // ✈️ 전광판 연동
     db.ref('settings/live_board').on('value', snap => {
       let data = snap.val() || [];
       const tbody = document.getElementById('boardTableBody');
@@ -250,7 +306,6 @@
         return;
       }
 
-      // 🔥 정렬 로직 수정: ended, end, 종료 등 다양한 값 대응
       data.sort((a, b) => {
         const aEnded = (a.status === 'ended' || a.status === 'end' || a.status === '종료');
         const bEnded = (b.status === 'ended' || b.status === 'end' || b.status === '종료');
@@ -264,7 +319,6 @@
         
         if(m.status === 'playing') { stLabel = "경기중"; stClass = "st-playing"; }
         else if(m.status === 'moving') { stLabel = "이동중"; stClass = "st-moving"; }
-        // 🔥 종료 조건 무적 방어: 관리자에서 어떤 단어로 보내든 다 잡아냄
         else if(m.status === 'ended' || m.status === 'end' || m.status === '종료') { 
           stLabel = "경기 종료"; stClass = "st-ended"; rowClass = "row-ended"; 
         }
