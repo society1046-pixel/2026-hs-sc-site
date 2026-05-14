@@ -183,8 +183,17 @@
         isFirst = false;
       });
 
+      // 🔥 실시간 경기 현황 (시간순 내림차순 정렬 로직 추가)
       onValue(ref(dbRealtime, 'settings/live_board'), snap => {
-        const data = snap.val() || [];
+        let data = snap.val() || [];
+        
+        // 최신 시간이 맨 위로 오도록 정렬 (문자열 내림차순 비교)
+        data.sort((a, b) => {
+          const timeA = a.time || "";
+          const timeB = b.time || "";
+          return timeB.localeCompare(timeA);
+        });
+
         document.getElementById('matchBody').innerHTML = data.map(m => {
           let stClass = "status-ended", stText = "종료";
           if(m.status === 'playing' || m.status === '경기중') { stClass = "status-playing"; stText = "경기중"; }
@@ -221,7 +230,6 @@
       const overlay = document.getElementById('callOverlay');
       overlay.style.display = 'flex';
 
-      // "신속히" 단어 삭제됨
       const msg = new SpeechSynthesisUtterance(`${targetStr}, ${data.location}으로 ${data.dueTime}까지 모여주세요.`);
       msg.lang = 'ko-KR';
       window.speechSynthesis.speak(msg);
