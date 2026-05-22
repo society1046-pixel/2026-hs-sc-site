@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>학생회 관리자 - 계정 관리</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
+    .header { background-color: #7BA4DB; color: white; padding: 20px; text-align: center; font-weight: bold; font-size: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .container { max-width: 900px; margin: 20px auto; padding: 0 15px; }
+    .back-btn { background: white; border: 1px solid #7BA4DB; color: #7BA4DB; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 20px; }
+    
+    .user-table-card { background: white; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); overflow: hidden; border: 1px solid #EAF0F6; margin-bottom: 20px; }
+    
+    /* 일괄 생성 입력창 관련 CSS 추가 */
+    .bulk-create-header { margin-top: 0; margin-bottom: 10px; color: #2D3748; font-size: 18px; }
+    .bulk-create-desc { font-size: 13px; color: #718096; margin-bottom: 15px; line-height: 1.5; }
+    .bulk-textarea { width: 100%; padding: 12px; border: 1px solid #CBD5E0; border-radius: 8px; margin-bottom: 15px; font-family: inherit; font-size: 14px; box-sizing: border-box; outline: none; resize: vertical; background-color: #FAFCFF; }
+    .bulk-textarea:focus { border-color: #7BA4DB; box-shadow: 0 0 0 2px rgba(123, 164, 219, 0.2); }
+    .btn-create { background-color: #48BB78; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
+    .btn-create:hover { background-color: #38A169; }
+    .btn-create:disabled { background-color: #A0AEC0; cursor: not-allowed; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { background-color: #FAFCFF; color: #718096; padding: 15px; border-bottom: 2px solid #F4F7FB; text-align: left; }
+    td { padding: 15px; border-bottom: 1px solid #F4F7FB; }
+    tr:hover { background-color: #FAFCFF; }
+    
+    .role-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: white; }
+    .del-btn { background-color: #F19C99; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+    .del-btn:hover { background-color: #E53E3E; }
+    
+    #loading { text-align: center; padding: 50px; color: #A0AEC0; }
+  </style>
+</head>
+<body>
+
+<div class="header">학생회 통합 관리 시스템</div>
+
+<div class="container">
+  <button class="back-btn" onclick="location.href='main.html'">← 메인으로 돌아가기</button>
+  
+  <div class="user-table-card" style="padding: 20px;">
+    <h3 class="bulk-create-header">👥 계정 일괄 생성</h3>
+    <p class="bulk-create-desc">
+      아이디(학번), 이름, 연락처를 <strong>쉼표(,)</strong> 또는 <strong>띄어쓰기</strong>로 구분하여 한 줄에 한 명씩 입력해주세요.<br>
+      예시) 20101, 홍길동, 010-1234-5678 (연락처는 생략 가능)
+    </p>
+    <textarea id="bulk-input" class="bulk-textarea" rows="4" placeholder="20101, 홍길동, 010-1234-5678&#13;&#10;20102 김철수 010-8765-4321"></textarea>
+    <button id="bulk-submit-btn" class="btn-create" onclick="createBulkUsers()">계정 일괄 생성하기</button>
+  </div>
+
+  <div class="user-table-card">
+    <table id="user-table">
+      <thead>
+        <tr>
+          <th>아이디(학번)</th>
+          <th>이름</th>
+          <th>역할</th>
+          <th>연락처</th>
+          <th>관리</th>
+        </tr>
+      </thead>
+      <tbody id="user-list">
+        </tbody>
+    </table>
+    <div id="loading">사용자 데이터를 불러오는 중...</div>
+  </div>
+</div>
+
+<script type="module">
+  // setDoc 임포트 추가 (계정 생성을 위해)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDQa2sidgWpIQyPVyTIlCcLWHscO89QZ70",
+    authDomain: "hyeongsok-student-council.firebaseapp.com",
+    projectId: "hyeongsok-student-council",
+    storageBucket: "hyeongsok-student-council.firebasestorage.app",
+    messagingSenderId: "405153370998",
+    appId: "1:405153370998:web:75b16c68f97fb5879aa057"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // 페이지 진입 시 관리자 권한 체크
+  const userRole = sessionStorage.getItem('userRole');
+  if (userRole !== "46") {
+    alert("관리자만 접근 가능한 페이지입니다.");
+    location.href = 'main.html';
+  }
+
+  async function loadUsers() {
+    const userList = document.getElementById('user-list');
+    const loading = document.getElementById('loading');
+    
+    try {
+      const querySnapshot = await getDocs(collection(db, "users"));
+      loading.style.display = 'none';
+      userList.innerHTML = '';
+
+      querySnapshot.forEach((docSnap) => {
+        const user = docSnap.data();
+        const tr = document.createElement('tr');
+        
+        tr.innerHTML = `
+          <td><strong>${user.id}</strong> ${user.department ? `<br><small style="color:#7BA4DB">${user.department}</small>` : ''}</td>
+          <td>${user.name}</td>
+          <td><span class="role-badge" style="background-color:#A0AEC0">${user.role || '학생'}</span></td>
+          <td>${user.phone || '-'}</td>
+          <td><button class="del-btn" onclick="deleteUser('${docSnap.id}', '${user.name}')">삭제</button></td>
+        `;
+        userList.appendChild(tr);
+      });
+    } catch (error) {
+      console.error("데이터 로드 에러:", error);
+      loading.innerText = "데이터를 불러오지 못했습니다.";
+    }
+  }
+
+  // 삭제 함수 전역 등록
+  window.deleteUser = async function(docId, userName) {
+    if (confirm(`${userName}님의 계정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) {
+      try {
+        await deleteDoc(doc(db, "users", docId));
+        alert("성공적으로 삭제되었습니다.");
+        loadUsers(); // 목록 새로고침
+      } catch (error) {
+        alert("삭제 중 오류가 발생했습니다.");
+      }
+    }
+  };
+
+  // 일괄 계정 생성 함수 전역 등록
+  window.createBulkUsers = async function() {
+    const inputArea = document.getElementById('bulk-input');
+    const inputData = inputArea.value.trim();
+    
+    if (!inputData) {
+      alert("입력된 데이터가 없습니다. 양식에 맞게 입력해주세요.");
+      return;
+    }
+
+    const btn = document.getElementById('bulk-submit-btn');
+    btn.innerText = "생성 중입니다...";
+    btn.disabled = true;
+
+    const lines = inputData.split('\n');
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const line of lines) {
+      if (!line.trim()) continue; // 빈 줄 무시
+      
+      // 쉼표나 띄어쓰기를 기준으로 텍스트 분리 (연속된 공백도 하나로 취급)
+      const tokens = line.split(/[,\s]+/).filter(Boolean);
+
+      if (tokens.length >= 2) {
+        const userId = tokens[0];
+        const userName = tokens[1];
+        const userPhone = tokens[2] || ""; // 전화번호는 없으면 빈 문자열
+
+        try {
+          // 문서 ID를 학번(userId)으로 하여 Firestore에 저장 (이미 있으면 덮어쓰기됨)
+          await setDoc(doc(db, "users", userId), {
+            id: userId,
+            name: userName,
+            phone: userPhone,
+            role: "1", // 기본 역할: 1 (학생)
+            timestamp: new Date().toISOString()
+          });
+          successCount++;
+        } catch (error) {
+          console.error(`[${userId}] 생성 실패:`, error);
+          failCount++;
+        }
+      } else {
+        console.warn("형식이 맞지 않는 줄 건너뜀:", line);
+        failCount++;
+      }
+    }
+
+    alert(`계정 일괄 생성 완료!\n성공: ${successCount}건, 실패: ${failCount}건`);
+    
+    // UI 초기화 및 목록 새로고침
+    inputArea.value = '';
+    btn.innerText = "계정 일괄 생성하기";
+    btn.disabled = false;
+    loadUsers();
+  };
+
+  loadUsers();
+</script>
+</body>
+</html>
