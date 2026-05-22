@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>형석고등학교 학생회 - 신청 현황</title>
+  
+  <style>
+    /* 공통 시스템 CSS */
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
+    .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; padding: 0; }
+    .nav-center { display: flex; align-items: center; justify-content: center; }
+    .nav-logo { height: 35px; width: 35px; background-color: white; border-radius: 50%; margin-right: 10px; object-fit: contain; padding: 2px; }
+    .nav-title { font-size: 20px; font-weight: bold; margin: 0; }
+    
+    .sidebar { height: 100%; width: 280px; position: fixed; top: 0; left: -280px; background-color: white; box-shadow: 4px 0 15px rgba(0,0,0,0.05); transition: 0.3s; z-index: 1000; overflow-x: hidden; display: flex; flex-direction: column; }
+    .sidebar-header { background-color: #FAFCFF; padding: 30px 20px 20px; border-bottom: 1px solid #EAF0F6; position: relative; }
+    .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; border: none; background: none; color: #A0AEC0; }
+    .user-id-text { font-size: 20px; font-weight: bold; color: #2D3748; margin: 0 0 8px 0; }
+    .user-role-badge { display: inline-block; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: bold; }
+    .menu-list { padding: 10px 0; flex-grow: 1; }
+    .menu-item { padding: 15px 25px; display: block; color: #7BA4DB; font-weight: bold; text-decoration: none; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; }
+    .menu-item:hover { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; }
+    .action-btn { margin: 20px; padding: 12px 20px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); transition: 0.2s; }
+
+    .sub-menu { display: none; background-color: #FAFCFF; }
+    .sub-menu.show { display: block; }
+    .sub-menu .menu-item { padding-left: 40px; font-size: 14px; color: #8BAFDE; }
+
+    .container { max-width: 900px; margin: 40px auto; padding: 0 15px; }
+    .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; }
+    .card h2 { margin-top: 0; color: #2D3748; border-bottom: 2px solid #F4F7FB; padding-bottom: 15px; margin-bottom: 20px; text-align: center; }
+
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; white-space: nowrap; }
+    th { background-color: #7BA4DB; color: white; padding: 12px; font-weight: bold; }
+    td { padding: 12px; border-bottom: 1px solid #EAF0F6; color: #4A5568; }
+    
+    .badge-slot1 { background-color: #F6AD55; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+    .badge-slot2 { background-color: #82CA9D; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+    .badge-type { background-color: #EDF2F7; color: #4A5568; padding: 4px 10px; border-radius: 12px; font-size: 12px; }
+
+    .btn-cancel-sm { background-color: #F19C99; color: white; border: none; border-radius: 4px; padding: 6px 10px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    .btn-cancel-sm:hover { background-color: #E57D7A; }
+
+    .btn-group { display: flex; gap: 10px; margin-top: 30px; justify-content: center; }
+    .btn-primary { background-color: #7BA4DB; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; text-decoration: none; }
+    .btn-secondary { background-color: #EAF0F6; color: #4A5568; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <div class="navbar">
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+    <div class="nav-center">
+      <img src="https://drive.google.com/thumbnail?id=1-vFaLyktqvl_ywa0BpiBppSI6lEgsKDd&sz=w200" alt="로고" class="nav-logo">
+      <p class="nav-title">형석고등학교 학생회</p>
+    </div>
+    <div style="width: 24px;"></div> 
+  </div>
+
+  <div id="mySidebar" class="sidebar">
+    <div class="sidebar-header">
+      <button class="close-btn" onclick="toggleMenu()">×</button>
+      <h3 class="user-id-text" id="display-id">ID 로딩중...</h3>
+      <span class="user-role-badge" id="display-role">권한 로딩중...</span>
+    </div>
+    <div class="menu-list" id="menu-list-container"></div>
+    <button id="action-btn" class="action-btn">버튼 로딩중...</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>전체 신청 현황</h2>
+      
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>날짜(요일)</th>
+              <th>교시</th>
+              <th>구분</th>
+              <th>신청자</th>
+              <th>멘티</th>
+              <th>관리</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <tr><td colspan="6">데이터를 불러오는 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="btn-group">
+        <a href="main.html" class="btn-secondary">메인으로</a>
+        <a href="metl.html" class="btn-primary">신청하러 가기</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { getFirestore, doc, updateDoc, getDocs, collection, query, orderBy, deleteField, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDQa2sidgWpIQyPVyTIlCcLWHscO89QZ70",
+      authDomain: "hyeongsok-student-council.firebaseapp.com",
+      projectId: "hyeongsok-student-council",
+      storageBucket: "hyeongsok-student-council.firebasestorage.app",
+      messagingSenderId: "405153370998",
+      appId: "1:405153370998:web:75b16c68f97fb5879aa057"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 세션 정보 (로그인한 사용자 아이디)
+    const myId = sessionStorage.getItem('id') || sessionStorage.getItem('userId');
+
+    window.onload = function() {
+      initSidebar();
+      loadApplications();
+    };
+
+    // 신청 목록 불러오기
+    async function loadApplications() {
+      const tbody = document.getElementById('table-body');
+      
+      try {
+        const q = query(collection(db, "study_applications"), orderBy("applyDate", "asc"));
+        const snap = await getDocs(q);
+        
+        let html = '';
+        if (snap.empty) {
+          html = '<tr><td colspan="6">현재 신청 내역이 없습니다.</td></tr>';
+        } else {
+          snap.forEach(docSnap => {
+            const d = docSnap.data();
+            const dateStr = `${formatDate(d.applyDate)} (${d.applyDay})`;
+            
+            // 1교시 데이터가 있는 경우
+            if (d.slot1_type) {
+              html += makeRow(docSnap.id, 1, dateStr, d.slot1_type, d.id, d.name || d.userName || d.nmae, d.slot1_partnerId, d.slot1_partnerName);
+            }
+            // 2교시 데이터가 있는 경우
+            if (d.slot2_type) {
+              html += makeRow(docSnap.id, 2, dateStr, d.slot2_type, d.id, d.name || d.userName || d.nmae, d.slot2_partnerId, d.slot2_partnerName);
+            }
+          });
+        }
+        tbody.innerHTML = html;
+      } catch (e) {
+        console.error(e);
+        tbody.innerHTML = '<tr><td colspan="6" style="color:red;">데이터 로드 중 오류가 발생했습니다.</td></tr>';
+      }
+    }
+
+    // 표의 한 줄(Row) 생성
+    function makeRow(docId, slot, date, type, userId, userName, pId, pName) {
+      const slotBadge = slot === 1 ? '<span class="badge-slot1">1교시</span>' : '<span class="badge-slot2">2교시</span>';
+      const typeText = type === 'homebase' ? '🏠 홈베이스' : '👥 멘토멘티';
+      const partnerText = pId ? `${pId}(${pName})` : '-';
+      
+      // 본인이 신청자이거나 상대방인 경우에만 취소 버튼 활성화
+      const canCancel = (userId === myId || pId === myId);
+      const actionHtml = canCancel 
+        ? `<button class="btn-cancel-sm" onclick="cancelApp('${docId}', ${slot})">취소</button>` 
+        : '-';
+
+      return `<tr>
+        <td>${date}</td>
+        <td>${slotBadge}</td>
+        <td><span class="badge-type">${typeText}</span></td>
+        <td>${userId}(${userName})</td>
+        <td>${partnerText}</td>
+        <td>${actionHtml}</td>
+      </tr>`;
+    }
+
+    // 날짜 포맷 (20240520 -> 5월 20일)
+    function formatDate(str) {
+      if(!str || str.length < 8) return str;
+      return `${parseInt(str.substring(4,6))}월 ${parseInt(str.substring(6,8))}일`;
+    }
+
+    // 취소 로직 (해당 교시만 삭제)
+    window.cancelApp = async function(docId, slot) {
+      if (!confirm(`${slot}교시 신청을 취소하시겠습니까?`)) return;
+
+      try {
+        const docRef = doc(db, "study_applications", docId);
+        
+        // 해당 교시의 필드들만 삭제
+        const updateObj = {};
+        updateObj[`slot${slot}_type`] = deleteField();
+        updateObj[`slot${slot}_partnerId`] = deleteField();
+        updateObj[`slot${slot}_partnerName`] = deleteField();
+        
+        await updateDoc(docRef, updateObj);
+
+        alert("취소되었습니다.");
+        location.reload(); // 목록 새로고침
+      } catch (e) {
+        alert("취소 처리 중 오류가 발생했습니다.");
+        console.error(e);
+      }
+    };
+  </script>
+
+  <script>
+    // 사이드바 및 공통 기능
+    const roleNames = { 45: "선생님", 46: "관리자" };
+    let currentRole = parseInt(sessionStorage.getItem('userRole') || 0);
+    const userId = sessionStorage.getItem('id') || sessionStorage.getItem('userId') || '';
+    const userName = sessionStorage.getItem('name') || sessionStorage.getItem('userName') || '';
+
+    function initSidebar() {
+      const displayId = document.getElementById('display-id');
+      const roleDisplay = document.getElementById('display-role');
+      displayId.innerText = userId + (userName ? ` (${userName})` : "");
+      
+      // 권한 표시 분기
+      if (currentRole === 45 || currentRole === 46) {
+        roleDisplay.innerText = roleNames[currentRole];
+        roleDisplay.style.backgroundColor = currentRole === 46 ? "#E53E3E" : "#82CA9D";
+      } else {
+        roleDisplay.innerText = "2학년 학생";
+        roleDisplay.style.backgroundColor = "#F6AD55";
+      }
+      
+      // 메뉴 구조 통일
+      document.getElementById('menu-list-container').innerHTML = `
+          <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+          <div class="menu-item" onclick="toggleSubMenu('mett')">자습 명단 관리 ▼</div>
+          <div id="mett" class="sub-menu show">
+            <div class="menu-item" onclick="goToPage('metl')">- 학생 신청 페이지</div>
+            <div class="menu-item" style="color: #7BA4DB; font-weight: bold;" onclick="goToPage('metta')">- 전체 신청 명단</div>
+            <div class="menu-item" onclick="goToPage('mett')">- 선생님 설정 페이지</div>
+          </div>
+        `;
+      const actionBtn = document.getElementById('action-btn');
+      actionBtn.innerText = "로그아웃";
+      actionBtn.style.backgroundColor = "#F19C99";
+      actionBtn.onclick = logout;
+    }
+
+    function toggleMenu() {
+      const sidebar = document.getElementById("mySidebar");
+      sidebar.style.left = sidebar.style.left === "0px" ? "-280px" : "0px";
+    }
+
+    function toggleSubMenu(menuId) { 
+      const subMenu = document.getElementById(menuId);
+      if(subMenu) subMenu.classList.toggle('show');
+    }
+
+    function logout() { 
+      if(confirm('로그아웃 하시겠습니까?')) { 
+        sessionStorage.clear(); 
+        window.location.href = 'main.html'; 
+      } 
+    }
+    function goToPage(pageName) { window.location.href = pageName + '.html'; }
+  </script>
+</body>
+</html>

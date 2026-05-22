@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>형석고등학교 학생회 - 설정(선생님)</title>
+  
+  <style>
+    /* 공통 시스템 CSS */
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
+    .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; padding: 0; }
+    .nav-center { display: flex; align-items: center; justify-content: center; }
+    .nav-logo { height: 35px; width: 35px; background-color: white; border-radius: 50%; margin-right: 10px; object-fit: contain; padding: 2px; }
+    .nav-title { font-size: 20px; font-weight: bold; margin: 0; }
+    
+    .sidebar { height: 100%; width: 280px; position: fixed; top: 0; left: -280px; background-color: white; box-shadow: 4px 0 15px rgba(0,0,0,0.05); transition: 0.3s; z-index: 1000; overflow-x: hidden; display: flex; flex-direction: column; }
+    .sidebar-header { background-color: #FAFCFF; padding: 30px 20px 20px; border-bottom: 1px solid #EAF0F6; position: relative; }
+    .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; border: none; background: none; color: #A0AEC0; }
+    .user-id-text { font-size: 20px; font-weight: bold; color: #2D3748; margin: 0 0 8px 0; }
+    .user-role-badge { display: inline-block; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: bold; }
+    .menu-list { padding: 10px 0; flex-grow: 1; }
+    .menu-item { padding: 15px 25px; display: block; color: #7BA4DB; font-weight: bold; text-decoration: none; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; }
+    .menu-item:hover { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; }
+    .action-btn { margin: 20px; padding: 12px 20px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); transition: 0.2s; }
+    
+    .sub-menu { display: none; background-color: #FAFCFF; }
+    .sub-menu.show { display: block; }
+    .sub-menu .menu-item { padding-left: 40px; font-size: 14px; color: #8BAFDE; }
+
+    .container { max-width: 900px; margin: 40px auto; padding: 0 15px; display: flex; flex-direction: column; gap: 20px; }
+    .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; }
+    .card h3 { margin-top: 0; color: #2D3748; border-bottom: 2px solid #F4F7FB; padding-bottom: 15px; margin-bottom: 20px; font-size: 18px; }
+
+    .form-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 15px; }
+    .form-row label { font-weight: bold; color: #4A5568; font-size: 14px; white-space: nowrap; }
+    .form-control { padding: 10px 12px; border: 1px solid #CBD5E0; border-radius: 8px; font-family: inherit; font-size: 14px; flex-grow: 1; min-width: 120px; outline: none; transition: 0.2s; background-color: white; }
+    .form-control:focus { border-color: #7BA4DB; box-shadow: 0 0 0 2px rgba(123, 164, 219, 0.2); }
+    .info-text { font-size: 12px; color: #A0AEC0; margin: 5px 0 0 0; line-height: 1.5; }
+    
+    .btn { padding: 10px 18px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.2s; white-space: nowrap; }
+    .btn-primary { background-color: #7BA4DB; width: 100%; margin-top: 10px; padding: 14px; }
+    .btn-primary:hover { background-color: #638CBE; }
+    .btn-success { background-color: #82CA9D; }
+    .btn-success:hover { background-color: #6BB788; }
+    .btn-danger { background-color: #F19C99; padding: 6px 12px; font-size: 12px; }
+    .btn-danger:hover { background-color: #E57D7A; }
+    .btn-secondary { background-color: #A0AEC0; display: block; width: 100%; text-align: center; text-decoration: none; padding: 14px; box-sizing: border-box; margin-top: 10px; }
+    
+    .checkbox-group { display: flex; gap: 15px; flex-wrap: wrap; padding: 10px; background: #FAFCFF; border: 1px solid #EDF2F7; border-radius: 8px; width: 100%; }
+    .checkbox-group label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: normal; }
+
+    .badge-slot1 { background-color: #F6AD55; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+    .badge-slot2 { background-color: #82CA9D; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+    .badge-type { background-color: #7BA4DB; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+
+    .table-responsive { overflow-x: auto; }
+    .table-responsive table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; white-space: nowrap; }
+    .table-responsive th { background-color: #F4F7FB; padding: 12px; border-bottom: 2px solid #DCE4EC; color: #2D3748; font-weight: bold; }
+    .table-responsive td { padding: 12px; border-bottom: 1px solid #EAF0F6; color: #4A5568; }
+  </style>
+</head>
+<body>
+
+  <script>
+    (function() {
+      const userRole = parseInt(sessionStorage.getItem('userRole') || 0);
+      if (userRole !== 45 && userRole !== 46) {
+        alert("접근 권한이 없습니다. 선생님 혹은 관리자만 이용 가능합니다.");
+        window.location.href = "main.html";
+      }
+    })();
+  </script>
+
+  <div class="navbar">
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+    <div class="nav-center">
+      <img src="https://drive.google.com/thumbnail?id=1-vFaLyktqvl_ywa0BpiBppSI6lEgsKDd&sz=w200" alt="로고" class="nav-logo">
+      <p class="nav-title">형석고등학교 학생회</p>
+    </div>
+    <div style="width: 24px;"></div> 
+  </div>
+
+  <div id="mySidebar" class="sidebar">
+    <div class="sidebar-header">
+      <button class="close-btn" onclick="toggleMenu()">×</button>
+      <h3 class="user-id-text" id="display-id">ID 로딩중...</h3>
+      <span class="user-role-badge" id="display-role">권한 로딩중...</span>
+    </div>
+    <div class="menu-list" id="menu-list-container"></div>
+    <button id="action-btn" class="action-btn">버튼 로딩중...</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h3>신청 폼 접수 요일 및 시간 설정</h3>
+      <p class="info-text" style="margin-bottom: 15px;">
+        * 학생들이 <b>신청 폼에 접근할 수 있는 요일</b>을 중복 선택하고, 해당 요일의 <b>오픈/마감 시간</b>을 설정합니다.
+      </p>
+      
+      <div class="form-row">
+        <label>신청 폼 활성화 요일</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" id="open-mon" value="월"> 월요일</label>
+          <label><input type="checkbox" id="open-tue" value="화"> 화요일</label>
+          <label><input type="checkbox" id="open-wed" value="수"> 수요일</label>
+          <label><input type="checkbox" id="open-thu" value="목"> 목요일</label>
+          <label><input type="checkbox" id="open-fri" value="금"> 금요일</label>
+        </div>
+      </div>
+      <div class="form-row" style="margin-top: 15px;">
+        <label for="startTime">신청 오픈 시간</label>
+        <input type="text" id="startTime" class="form-control" placeholder="예: 08:30" maxlength="5" oninput="formatTimeInput(this)">
+      </div>
+      <div class="form-row">
+        <label for="endTime">신청 마감 시간</label>
+        <input type="text" id="endTime" class="form-control" placeholder="예: 18:00" maxlength="5" oninput="formatTimeInput(this)">
+      </div>
+      <button id="savePeriodBtn" class="btn btn-primary" onclick="savePeriodSettings()">신청 기간 설정 저장</button>
+    </div>
+
+    <div class="card">
+      <h3>주간 명단 자동 초기화 설정</h3>
+      <p class="info-text" style="margin-bottom: 15px;">
+        * 일주일에 단 한 번, 지정된 요일과 시간에 지난 주차의 명단 데이터를 리셋합니다.
+      </p>
+      <div class="form-row">
+        <label>초기화 진행 요일</label>
+        <select id="resetDay" class="form-control">
+          <option value="일">일요일</option>
+          <option value="월">월요일</option>
+          <option value="토">토요일</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>초기화 실행 시간</label>
+        <input type="time" id="resetTime" class="form-control" value="00:00">
+      </div>
+      <button class="btn btn-primary" onclick="saveResetSettings()" style="background-color: #6BB788;">초기화 스케줄 저장</button>
+    </div>
+
+    <div class="card">
+      <h3>학생 강제 추가</h3>
+      <p class="info-text" style="margin-bottom: 15px;">* 설정된 시간/정원과 무관하게 관리자가 명단에 직접 추가합니다.</p>
+      
+      <div class="form-row">
+        <select id="addDate" class="form-control">
+          <option value="월">월요일</option>
+          <option value="화">화요일</option>
+          <option value="목">목요일</option>
+          <option value="금">금요일</option>
+        </select>
+        
+        <select id="addSlot" class="form-control">
+          <option value="1">1교시</option>
+          <option value="2">2교시</option>
+        </select>
+
+        <select id="addType" class="form-control" onchange="togglePartnerInput()">
+          <option value="homebase">홈베이스</option>
+          <option value="mentor">멘토멘티</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <input type="text" id="addId1" class="form-control" placeholder="신청자 아이디(멘토)">
+        <input type="text" id="addId2" class="form-control" placeholder="멘티 아이디" style="display: none;">
+        <button id="addBtn" class="btn btn-success" onclick="adminAdd()">강제 추가</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>전체 신청 현황 관리</h3>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>참여 예정일</th>
+              <th>교시</th>
+              <th>구분</th>
+              <th>신청자(아이디/이름)</th>
+              <th>상대방(멘토/멘티)</th>
+              <th>관리</th>
+            </tr>
+          </thead>
+          <tbody id="admin-table-body">
+            </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <a href="main.html" class="btn btn-secondary">메인으로 돌아가기</a>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDQa2sidgWpIQyPVyTIlCcLWHscO89QZ70",
+      authDomain: "hyeongsok-student-council.firebaseapp.com",
+      projectId: "hyeongsok-student-council",
+      storageBucket: "hyeongsok-student-council.firebasestorage.app",
+      messagingSenderId: "405153370998",
+      appId: "1:405153370998:web:75b16c68f97fb5879aa057"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    window.db = db;
+    
+    window.onload = function() {
+      initSidebar();
+      loadSettings();
+      loadList();
+    };
+
+    window.loadSettings = async function() {
+      const periodSnap = await getDoc(doc(db, "system_settings", "app_period"));
+      if(periodSnap.exists()) {
+        const data = periodSnap.data();
+        document.getElementById('startTime').value = data.startTime || '';
+        document.getElementById('endTime').value = data.endTime || '';
+        if(data.openDays && Array.isArray(data.openDays)) {
+          ['mon', 'tue', 'wed', 'thu', 'fri'].forEach(dayKey => {
+            const el = document.getElementById(`open-${dayKey}`);
+            if(data.openDays.includes(el.value)) el.checked = true;
+          });
+        }
+      }
+
+      const resetSnap = await getDoc(doc(db, "system_settings", "auto_reset"));
+      if(resetSnap.exists()) {
+        const rData = resetSnap.data();
+        document.getElementById('resetDay').value = rData.day || '일';
+        document.getElementById('resetTime').value = rData.time || '00:00';
+      }
+    };
+
+    window.savePeriodSettings = async function() {
+      const startT = document.getElementById('startTime').value;
+      const endT = document.getElementById('endTime').value;
+      
+      const regex = /^([01][0-9]|2[0-3]):([0-5][0-9])$/;
+      if(!regex.test(startT) || !regex.test(endT)) {
+        return alert("시간을 24시간제 형식(예: 14:30)으로 입력해주세요.");
+      }
+
+      let checkedDays = [];
+      ['mon', 'tue', 'wed', 'thu', 'fri'].forEach(dayKey => {
+        const el = document.getElementById(`open-${dayKey}`);
+        if(el.checked) checkedDays.push(el.value);
+      });
+
+      if(checkedDays.length === 0) return alert("최소 하루 이상의 요일을 선택해주세요.");
+
+      await setDoc(doc(db, "system_settings", "app_period"), {
+        openDays: checkedDays, startTime: startT, endTime: endT
+      });
+      alert("신청 폼 접수 요일 및 시간이 저장되었습니다.");
+    };
+
+    window.saveResetSettings = async function() {
+      const rDay = document.getElementById('resetDay').value;
+      const rTime = document.getElementById('resetTime').value;
+      
+      await setDoc(doc(db, "system_settings", "auto_reset"), { day: rDay, time: rTime });
+      alert(`매주 ${rDay}요일 ${rTime}에 자동 초기화 되도록 스케줄이 저장되었습니다.`);
+    };
+
+    window.loadList = async function() {
+      const tbody = document.getElementById('admin-table-body');
+      tbody.innerHTML = "<tr><td colspan='6'>데이터 불러오는 중...</td></tr>";
+      
+      try {
+        const q = query(collection(db, "study_applications"), orderBy("applyDate", "desc"));
+        const snap = await getDocs(q);
+        
+        let html = '';
+        snap.forEach(docSnap => {
+          const d = docSnap.data();
+          const studentId = d.id || d.userId || "-";
+          const studentName = d.name || d.userName || d.nmae || "이름없음";
+          
+          if(d.slot1_type) {
+             const typeBadge = d.slot1_type === 'homebase' ? '🏠홈베이스' : '👥멘토멘티';
+             const partner = d.slot1_type === 'mentor' ? `${d.slot1_partnerId}(${d.slot1_partnerName})` : '-';
+             html += makeRow(docSnap.id, d.applyDate, d.applyDay, 1, typeBadge, `${studentId}(${studentName})`, partner);
+          }
+          if(d.slot2_type) {
+             const typeBadge = d.slot2_type === 'homebase' ? '🏠홈베이스' : '👥멘토멘티';
+             const partner = d.slot2_type === 'mentor' ? `${d.slot2_partnerId}(${d.slot2_partnerName})` : '-';
+             html += makeRow(docSnap.id, d.applyDate, d.applyDay, 2, typeBadge, `${studentId}(${studentName})`, partner);
+          }
+        });
+        
+        tbody.innerHTML = html || "<tr><td colspan='6'>신청 내역이 없습니다.</td></tr>";
+      } catch (error) {
+        console.error("리스트 로드 오류:", error);
+        tbody.innerHTML = `<tr><td colspan='6' style="color:red;">데이터를 불러오는 중 오류가 발생했습니다.</td></tr>`;
+      }
+    };
+
+    function makeRow(docId, date, day, slot, type, userStr, partnerStr) {
+      const slotBadge = slot === 1 ? '<span class="badge-slot1">1교시</span>' : '<span class="badge-slot2">2교시</span>';
+      return `<tr>
+          <td>${date} (${day})</td>
+          <td>${slotBadge}</td>
+          <td><span class="badge-type">${type}</span></td>
+          <td>${userStr}</td>
+          <td>${partnerStr}</td>
+          <td><button class="btn btn-danger" onclick="deleteRecord('${docId}')">삭제</button></td>
+        </tr>`;
+    }
+
+    window.deleteRecord = async function(id) {
+      if(confirm("이 신청 기록을 삭제하시겠습니까?")) {
+        await deleteDoc(doc(db, "study_applications", id));
+        loadList();
+      }
+    };
+
+    window.togglePartnerInput = function() {
+      document.getElementById('addId2').style.display = document.getElementById('addType').value === 'mentor' ? 'block' : 'none';
+    };
+
+    window.adminAdd = async function() {
+      const day = document.getElementById('addDate').value;
+      const slot = document.getElementById('addSlot').value;
+      const type = document.getElementById('addType').value;
+      const id1 = document.getElementById('addId1').value.trim();
+      const id2 = document.getElementById('addId2').value.trim();
+
+      if(!id1) return alert("신청자 아이디를 입력하세요.");
+      
+      try {
+        let targetDate = new Date();
+        const dayOfWeek = targetDate.getDay();
+        let diff = 0;
+        if (day === '월') diff = 1 - dayOfWeek;
+        else if (day === '화') diff = 2 - dayOfWeek;
+        else if (day === '목') diff = 4 - dayOfWeek;
+        else if (day === '금') diff = 5 - dayOfWeek;
+        
+        if(dayOfWeek === 0 || diff < 0) diff += 7;
+        targetDate.setDate(targetDate.getDate() + diff);
+        const yStr = `${targetDate.getFullYear()}${String(targetDate.getMonth()+1).padStart(2,'0')}${String(targetDate.getDate()).padStart(2,'0')}`;
+
+        const userSnap = await getDoc(doc(db, "users", id1));
+        if (!userSnap.exists()) return alert(`[${id1}] 아이디를 DB에서 찾을 수 없습니다.`);
+        
+        const userData = userSnap.data();
+        const name1 = userData.name || userData.nmae;
+        
+        let docId = `${yStr}_${day}_${id1}`;
+        let payload = { id: id1, name: name1, applyDate: yStr, applyDay: day, timestamp: new Date().toISOString() };
+        payload[`slot${slot}_type`] = type;
+        
+        if(type === 'mentor') {
+          if(!id2) return alert("상대방 아이디를 입력하세요.");
+          const userSnap2 = await getDoc(doc(db, "users", id2));
+          if (!userSnap2.exists()) return alert(`상대방 [${id2}] 아이디를 찾을 수 없습니다.`);
+          const user2Data = userSnap2.data();
+          payload[`slot${slot}_partnerId`] = id2;
+          payload[`slot${slot}_partnerName`] = user2Data.name || user2Data.nmae;
+        }
+
+        await setDoc(doc(db, "study_applications", docId), payload, { merge: true });
+        alert(`${name1} 학생 강제 추가 완료`);
+        loadList();
+      } catch (error) { alert("오류: " + error.message); }
+    };
+  </script>
+
+  <script>
+    const roleNames = { 45: "선생님", 46: "관리자" };
+    let currentRole = parseInt(sessionStorage.getItem('userRole') || 0);
+    const userId = sessionStorage.getItem('userId') || sessionStorage.getItem('id') || '';
+    const userName = sessionStorage.getItem('userName') || sessionStorage.getItem('name') || '';
+
+    function initSidebar() {
+      const displayId = document.getElementById('display-id');
+      const roleDisplay = document.getElementById('display-role');
+      displayId.innerText = userId + (userName ? ` (${userName})` : "");
+      roleDisplay.innerText = roleNames[currentRole] || "관리자";
+      roleDisplay.style.backgroundColor = currentRole === 46 ? "#E53E3E" : "#82CA9D";
+      
+      document.getElementById('menu-list-container').innerHTML = `
+          <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+          <div class="menu-item" onclick="toggleSubMenu('mett')">자습 명단 관리 ▼</div>
+          <div id="mett" class="sub-menu show">
+            <div class="menu-item" onclick="goToPage('metl')">- 학생 신청 페이지</div>
+            <div class="menu-item" onclick="goToPage('metta')">- 전체 신청 명단</div>
+            <div class="menu-item" style="color: #7BA4DB; font-weight: bold;" onclick="goToPage('mett')">- 선생님 설정 페이지</div>
+          </div>
+        `;
+      const actionBtn = document.getElementById('action-btn');
+      actionBtn.innerText = "로그아웃";
+      actionBtn.style.backgroundColor = "#F19C99";
+      actionBtn.onclick = logout;
+    }
+
+    function toggleMenu() {
+      const sidebar = document.getElementById("mySidebar");
+      sidebar.style.left = sidebar.style.left === "0px" ? "-280px" : "0px";
+    }
+
+    function toggleSubMenu(menuId) { 
+      const subMenu = document.getElementById(menuId);
+      if(subMenu) subMenu.classList.toggle('show');
+    }
+
+    function formatTimeInput(target) {
+      let val = target.value.replace(/[^0-9]/g, ''); 
+      if (val.length > 2) val = val.substring(0, 2) + ':' + val.substring(2, 4);
+      target.value = val;
+    }
+
+    function logout() { 
+      if(confirm('로그아웃 하시겠습니까?')) { 
+        sessionStorage.clear(); 
+        window.location.href = 'main.html'; 
+      } 
+    }
+    function goToPage(pageName) { window.location.href = pageName + '.html'; }
+  </script>
+</body>
+</html>
