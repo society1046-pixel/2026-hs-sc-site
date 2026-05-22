@@ -65,15 +65,18 @@ function initMain() {
     else if (currentRole >= 42 && currentRole <= 44) roleDisplay.style.backgroundColor = "#F687B3"; 
     else if (currentRole >= 45 && currentRole <= 46) roleDisplay.style.backgroundColor = "#F19C99"; 
 
-    menuContainer.innerHTML = `
+    // 기본 메뉴 구성
+    let menuHtml = `
       <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
       <div class="menu-item" onclick="goToPage('info')">공지사항</div>
       <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
-      <div class="menu-item" onclick="toggleSubMenu('mett')">2학년부 멘토멘티(이음의 '도약') ▼</div>
+      <div class="menu-item" onclick="toggleSubMenu('mett')">2학년부 야자 프로그램 ▼</div>
       <div id="mett" class="sub-menu">
-        <div class="menu-item" onclick="goToPage('mettsi')">- 신청</div>
-        <div class="menu-item" onclick="goToPage('mettsita')">- 신청 명단</div>
-        <div class="menu-item" onclick="goToPage('mettsitat')">- 신청 명단(선생님용)</div>
+        <div class="menu-item" onclick="goToPage('metl')">- 멘토멘티, 홈베이스 신청</div>
+        <div class="menu-item" onclick="goToPage('metta')">- 신청 명단</div>
+        <div class="menu-item" onclick="goToPage('mett')">- 신청 명단(선생님용)</div>
+        <div class="menu-item" onclick="goToPage('nisi')">- 야자 특수 목적반 신청(반장)</div>
+        <div class="menu-item" onclick="goToPage('nita')">- 명단관리(선생님용)</div>
       </div>
       <div class="menu-item" onclick="goToPage('splgin')"> 체육대회 페이지</div>
       <div class="menu-item" onclick="toggleSubMenu('studentCouncilMenu')">학생회 ▼</div>
@@ -83,16 +86,23 @@ function initMain() {
         <div class="menu-item" onclick="goToPage('A3')">- 카테고리 3</div>
       </div>
     `;
+
+    // ★ 관리자 전용 메뉴 추가 (권한 번호 46일 때만 노출)
+    if (currentRole === 46) {
+      menuHtml += `
+        <div class="menu-item" onclick="goToPage('user_management')" style="color: #E53E3E; border-top: 1px solid #EAF0F6; margin-top: 10px;">계정 관리</div>
+      `;
+    }
+
+    menuContainer.innerHTML = menuHtml;
     
     actionBtn.innerText = "로그아웃";
     actionBtn.style.backgroundColor = "#F19C99";
     actionBtn.onclick = logout;
   }
 
-  // ★ 추가됨: 메인 화면 로딩 시 최근 공지사항 불러오기
   fetchRecentNotices();
 
-  // 달력 데이터 로딩
   const cachedData = localStorage.getItem('cachedCalendar');
   if (cachedData) {
     savedEvents = JSON.parse(cachedData);
@@ -110,11 +120,8 @@ function initMain() {
     });
 }
 
-// ★ 추가됨: 최근 공지사항을 가져와서 화면에 출력하는 함수
 function fetchRecentNotices() {
   const listContainer = document.getElementById('recent-notice-list');
-  
-  // 1. 로컬 스토리지에 저장된 공지사항이 있으면 즉시 화면에 먼저 띄움 (로딩 속도 0초 달성)
   const cachedNotices = localStorage.getItem('cachedRecentNotices');
   if (cachedNotices) {
     try {
@@ -123,49 +130,37 @@ function fetchRecentNotices() {
       console.error("캐시 파싱 에러", e);
     }
   } else {
-    // 캐시가 아예 없을 때만 로딩 문구 표시
     listContainer.innerHTML = `<li style="text-align:center; padding: 20px 0; font-size:13px; color:#A0AEC0;">공지사항을 불러오는 중... ⏳</li>`;
   }
 
-  // 2. 백그라운드에서 최신 데이터를 서버에 요청
   fetch(`${API_URL}?action=getNotices`, { redirect: 'follow' })
     .then(res => res.json())
     .then(data => {
       if (data.success && data.list) {
-        // 새로 받아온 데이터를 로컬 스토리지에 덮어쓰기
         localStorage.setItem('cachedRecentNotices', JSON.stringify(data.list));
-        // 화면도 최신 데이터로 조용히 업데이트
         renderNoticeList(data.list, listContainer);
       }
     })
     .catch(err => {
       console.error("공지사항 통신 에러:", err);
-      // 통신에 실패했는데 캐시된 데이터도 없다면 에러 메시지 표시
       if (!cachedNotices) {
         listContainer.innerHTML = `<li style="text-align:center; padding: 20px 0; font-size:13px; color:#F19C99;">공지사항을 불러오지 못했습니다.</li>`;
       }
     });
 }
 
-// ★ 누락되었던 필수 함수 추가 (오류 방지)
 function escapeHTML(str) {
   if (!str) return "";
   return String(str).replace(/[&<>'"]/g, tag => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[tag]));
 }
 
-// 공지사항 리스트를 HTML로 그려주는 헬퍼 함수
 function renderNoticeList(list, container) {
   container.innerHTML = '';
-  
   if (list && list.length > 0) {
-    // 최신 공지 3개만 자르기 (데이터가 역순으로 온다고 가정)
     const recentNotices = list.slice(0, 3);
-    
     recentNotices.forEach(item => {
-      // ★ 수정됨: 날짜 데이터가 비어있을 때 에러가 나지 않도록 안전하게 처리
       let dateText = item.date || "";
       let shortDate = typeof dateText === 'string' ? dateText.split(' ')[0] : dateText;
-      
       container.innerHTML += `
         <li class="notice-preview-item" onclick="goToPage('info')">
           <span class="notice-title-text">${escapeHTML(item.title || "제목 없음")}</span>
@@ -188,26 +183,21 @@ function changeMonth(direction) {
 function renderCalendar() {
   const today = new Date();
   document.getElementById('calendar-month-title').innerText = `📅 ${displayYear}년 ${displayMonth + 1}월`;
-
   const firstDay = new Date(displayYear, displayMonth, 1).getDay(); 
   const lastDate = new Date(displayYear, displayMonth + 1, 0).getDate(); 
   const daysGrid = document.getElementById('calendar-days');
   daysGrid.innerHTML = ''; 
-
   for (let i = 0; i < firstDay; i++) {
     daysGrid.innerHTML += `<div class="cal-day empty"></div>`;
   }
-
   for (let i = 1; i <= lastDate; i++) {
     let isTodayClass = (displayYear === today.getFullYear() && displayMonth === today.getMonth() && i === today.getDate()) ? "today" : ""; 
     let dateString = `${displayYear}-${displayMonth + 1}-${i}`;
-    
     let eventHtml = '';
     if (savedEvents[dateString]) {
       let formattedText = savedEvents[dateString][0].replace(/,/g, '<br>');
       eventHtml = `<div class="event-dot"></div><div class="event-text">${formattedText}</div>`;
     }
-
     daysGrid.innerHTML += `
       <div class="cal-day ${isTodayClass}" onclick="dayClicked(${displayYear}, ${displayMonth + 1}, ${i})">
         ${i}
@@ -220,7 +210,6 @@ let selectedDateStr = "";
 
 function dayClicked(year, month, day) {
   selectedDateStr = `${year}-${month}-${day}`;
-  
   if (!calendarAdmins.includes(currentRole)) {
     if(savedEvents[selectedDateStr] && savedEvents[selectedDateStr].length > 0) {
         let alertEvents = savedEvents[selectedDateStr].map(ev => ev.replace(/,/g, '\n'));
@@ -228,9 +217,7 @@ function dayClicked(year, month, day) {
     }
     return; 
   }
-
   document.getElementById('modal-title').innerText = `${month}월 ${day}일 일정 관리`;
-  
   let existingHtml = '';
   if(savedEvents[selectedDateStr]) {
     savedEvents[selectedDateStr].forEach(ev => {
@@ -294,24 +281,13 @@ function toggleSubMenu(menuId) {
 }
 
 function checkPinAndGo(pageName) {
-  const pins = {
-    'sp1': '1234', 
-    'A2': '5678'  
-  };
-
+  const pins = { 'sp1': '1234', 'A2': '5678' };
   const correctPin = pins[pageName];
-  
   if (correctPin) {
     const userInput = prompt("접근 권한이 필요합니다.\n인증번호를 입력해주세요:");
-    if (userInput === correctPin) {
-      goToPage(pageName);
-    } 
-    else if (userInput !== null) { 
-      alert("인증번호가 일치하지 않습니다.");
-    }
-  } else {
-    goToPage(pageName);
-  }
+    if (userInput === correctPin) { goToPage(pageName); } 
+    else if (userInput !== null) { alert("인증번호가 일치하지 않습니다."); }
+  } else { goToPage(pageName); }
 }
 
 function logout() {
