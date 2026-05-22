@@ -2,50 +2,468 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>형석고등학교 학생회 사이트 - 로그인</title>
+  <title>형석고등학교 학생회 - 로그인</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* 오리지널 깔끔한 블루톤 디자인 */
-    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #f5f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-    .login-card { background: white; padding: 40px 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; width: 320px; }
-    .login-card h2 { color: #4A90E2; margin-top: 0; margin-bottom: 5px; font-size: 24px; }
-    .login-card p { color: #888; font-size: 14px; margin-bottom: 25px; }
-    input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; transition: 0.2s; }
-    input:focus { border-color: #4A90E2; box-shadow: 0 0 5px rgba(74, 144, 226, 0.3); }
-    button { width: 100%; padding: 14px; background-color: #4A90E2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; margin-bottom: 10px; }
-    button:hover { background-color: #357ABD; }
-    #loading-msg { display: none; color: #4A90E2; font-size: 14px; margin-top: 15px; font-weight: bold; }
+    /* 기본 및 배경 스타일 */
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; color: #4A5568; }
     
-    /* 비밀번호 변경 텍스트 링크 스타일 */
-    .link-text { color: #888; font-size: 13px; text-decoration: underline; cursor: pointer; margin-top: 10px; display: inline-block; }
-    .link-text:hover { color: #4A90E2; }
+    /* 메인 카드 (부드러운 애니메이션 적용) */
+    .auth-card { background: white; width: 100%; max-width: 400px; padding: 35px 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); position: relative; overflow: hidden; transition: height 0.4s ease; }
+    
+    /* 뷰 전환 애니메이션 클래스 */
+    .view-section { display: none; opacity: 0; transition: opacity 0.4s ease, transform 0.4s ease; transform: translateX(20px); }
+    .view-section.active { display: block; opacity: 1; transform: translateX(0); }
+    
+    /* 타이틀 및 폼 디자인 */
+    h2 { text-align: center; color: #2D3748; margin-top: 0; margin-bottom: 25px; font-size: 22px; }
+    .form-group { margin-bottom: 18px; position: relative; }
+    label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: #718096; }
+    .input-box, select { width: 100%; padding: 12px; border: 1px solid #DCE4EC; border-radius: 10px; box-sizing: border-box; font-size: 14px; transition: 0.2s; background-color: #FAFCFF; }
+    .input-box:focus, select:focus { border-color: #7BA4DB; outline: none; background-color: white; box-shadow: 0 0 0 3px rgba(123, 164, 219, 0.1); }
+    
+    /* 비밀번호 표시 버튼 스타일 */
+    .pw-toggle-btn { position: absolute; right: 12px; bottom: 10px; background: none; border: none; color: #A0AEC0; font-size: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    .pw-toggle-btn:hover { color: #7BA4DB; }
+    .pw-input-wrapper { position: relative; }
+    .pw-input-wrapper .input-box { padding-right: 75px; }
+
+    /* 약관 동의 영역 스타일 */
+    .privacy-group { background-color: #FAFCFF; border: 1px solid #DCE4EC; border-radius: 10px; padding: 12px; margin-bottom: 18px; font-size: 13px; display: flex; align-items: flex-start; gap: 8px; }
+    .privacy-group input[type="checkbox"] { margin-top: 3px; cursor: pointer; }
+    .privacy-group label { font-weight: normal; color: #4A5568; line-height: 1.4; cursor: pointer; display: inline; }
+    .privacy-highlight { color: #E53E3E; font-weight: bold; }
+
+    /* 버튼 스타일 */
+    .btn-primary { width: 100%; background-color: #7BA4DB; color: white; border: none; padding: 14px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+    .btn-primary:hover { background-color: #618DC7; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(123, 164, 219, 0.3); }
+    .btn-secondary { width: 100%; background-color: #EAF0F6; color: #4A5568; border: none; padding: 14px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+    .btn-secondary:hover { background-color: #DCE4EC; }
+    
+    /* 텍스트 링크 */
+    .text-links { display: flex; justify-content: center; gap: 15px; margin-top: 20px; font-size: 13px; color: #A0AEC0; }
+    .text-links span { cursor: pointer; transition: 0.2s; }
+    .text-links span:hover { color: #7BA4DB; font-weight: bold; }
+
+    /* 로딩 오버레이 */
+    #loading-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); z-index: 100; justify-content: center; align-items: center; border-radius: 20px; font-weight: bold; color: #7BA4DB; }
+    
+    /* 유틸리티 */
+    .hidden { display: none !important; }
+    .flex-row { display: flex; gap: 10px; }
+    .flex-row > div { flex: 1; }
   </style>
-
-  <script src="loginh.js"></script>
-
 </head>
 <body>
-  <div class="login-card">
-    <h2>형석고등학교 학생회</h2>
-    
-    <div id="view-login">
-      <p>부여받은 학번과 비밀번호를 입력하세요.</p>
-      <input type="text" id="userId" placeholder="학번을 입력하세요">
-      <input type="password" id="userPw" placeholder="비밀번호를 입력하세요" onkeyup="if(window.event.keyCode==13){attemptLogin()}">
-      <button onclick="attemptLogin()">로그인</button>
-      <span class="link-text" onclick="toggleView('change')">비밀번호를 변경하시겠습니까?</span>
-    </div>
 
-    <div id="view-change-pw" style="display: none;">
-      <p>비밀번호 변경을 위해 정보를 입력하세요.</p>
-      <input type="text" id="changeId" placeholder="학번을 입력하세요">
-      <input type="password" id="oldPw" placeholder="기존 비밀번호">
-      <input type="password" id="newPw" placeholder="새 비밀번호">
-      <button onclick="attemptChangePw()" style="background-color: #4A5568;">비밀번호 변경하기</button>
-      <span class="link-text" onclick="toggleView('login')">로그인 화면으로 돌아가기</span>
-    </div>
+<div class="auth-card" id="card-container">
+  <div id="loading-overlay">처리 중입니다...</div>
 
-    <div id="loading-msg">서버와 통신 중입니다...</div>
+  <div id="view-login" class="view-section active">
+    <h2>형석고 학생회 로그인</h2>
+    <div class="form-group">
+      <label for="login-id">아이디 (학번)</label>
+      <input type="text" id="login-id" class="input-box" placeholder="아이디를 입력하세요">
+    </div>
+    <div class="form-group">
+      <label for="login-pw">비밀번호</label>
+      <div class="pw-input-wrapper">
+        <input type="password" id="login-pw" class="input-box" placeholder="비밀번호를 입력하세요" onkeypress="if(event.key==='Enter') login()">
+        <button type="button" class="pw-toggle-btn" onclick="togglePasswordVisibility('login-pw', this)">비밀번호 표시</button>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="login()">로그인</button>
+    <div class="text-links">
+      <span onclick="switchView('signup')">회원가입</span>
+      <span>|</span>
+      <span onclick="switchView('reset')">비밀번호 찾기</span>
+    </div>
   </div>
+
+  <div id="view-signup" class="view-section">
+    <h2>회원가입</h2>
+    <div class="form-group">
+      <label for="user-role">유형</label>
+      <select id="user-role" onchange="toggleSignupFields()">
+        <option value="">-- 유형을 선택하세요 --</option>
+        <option value="student">학생</option>
+        <option value="leader">반장 / 부반장</option>
+        <option value="council">학생회</option>
+        <option value="teacher">선생님</option>
+        <option value="admin">관리자</option> 
+      </select>
+    </div>
+
+    <div id="field-leader-type" class="form-group hidden">
+      <label for="reg-leader-type">반장, 부반장 선택</label>
+      <select id="reg-leader-type">
+        <option value="반장">반장</option>
+        <option value="부반장">부반장</option>
+      </select>
+    </div>
+
+    <div id="field-pin" class="form-group hidden">
+      <label for="reg-pin">인증 PIN 번호</label>
+      <input type="password" id="reg-pin" class="input-box" placeholder="회원가입 전용 PIN번호">
+    </div>
+
+    <div id="field-student" class="hidden">
+      <div class="flex-row">
+        <div class="form-group">
+          <label for="reg-grade">학년</label>
+          <select id="reg-grade" onchange="calcId()"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+        </div>
+        <div class="form-group">
+          <label for="reg-class">반</label>
+          <input type="number" id="reg-class" class="input-box" oninput="calcId()">
+        </div>
+        <div class="form-group">
+          <label for="reg-num">번호</label>
+          <input type="number" id="reg-num" class="input-box" oninput="calcId()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>생성된 아이디</label>
+        <input type="text" id="reg-auto-id" class="input-box" readonly style="background-color: #EAF0F6;">
+      </div>
+    </div>
+
+    <div id="field-teacher" class="form-group hidden">
+      <label for="reg-teacher-id">교사 아이디 설정</label>
+      <input type="text" id="reg-teacher-id" class="input-box" placeholder="사용할 아이디를 입력하세요">
+    </div>
+
+    <div id="field-admin" class="form-group hidden">
+      <label for="reg-admin-id">관리자 아이디 설정</label>
+      <input type="text" id="reg-admin-id" class="input-box" placeholder="사용할 아이디를 입력하세요">
+    </div>
+
+    <div id="field-council" class="form-group hidden">
+      <label for="reg-dept">소속 부서</label>
+      <select id="reg-dept">
+        <option value="회장단">회장단</option>
+        <option value="콘텐츠소통부">콘텐츠소통부</option>
+        <option value="문화소통부">문화소통부</option>
+        <option value="건강활동부">건강활동부</option>
+        <option value="학술문예부">학술문예부</option>
+        <option value="생활안전부">생활안전부</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="reg-name">이름</label>
+      <input type="text" id="reg-name" class="input-box" placeholder="이름을 입력하세요">
+    </div>
+    <div class="form-group">
+      <label for="reg-phone">전화번호</label>
+      <input type="tel" id="reg-phone" class="input-box" placeholder="01012345678 (숫자만)">
+    </div>
+    <div class="form-group">
+      <label for="reg-pw">비밀번호</label>
+      <div class="pw-input-wrapper">
+        <input type="password" id="reg-pw" class="input-box" placeholder="사용할 비밀번호">
+        <button type="button" class="pw-toggle-btn" onclick="togglePasswordVisibility('reg-pw', this)">비밀번호 표시</button>
+      </div>
+    </div>
+
+    <div class="privacy-group">
+      <input type="checkbox" id="reg-privacy">
+      <label for="reg-privacy">
+        <span class="privacy-highlight">[필수]</span> 학생회 사이트 이용을 위한 개인정보(이름, 학번, 연락처) 수집 및 이용에 동의합니다. 수집기간 1년, 이용목적: 본인확인, 비밀번호 찾기 기능
+      </label>
+    </div>
+
+    <button class="btn-primary" onclick="signup()">가입하기</button>
+    <button class="btn-secondary" onclick="switchView('login')">돌아가기</button>
+  </div>
+
+  <div id="view-reset" class="view-section">
+    <h2>비밀번호 찾기</h2>
+    <p style="font-size: 13px; color: #718096; margin-bottom: 15px;">가입 시 입력한 아이디와 전화번호를 입력해주세요.</p>
+    
+    <div id="reset-step1">
+      <div class="form-group">
+        <label for="reset-id">아이디</label>
+        <input type="text" id="reset-id" class="input-box" placeholder="아이디(학번) 입력">
+      </div>
+      <div class="form-group">
+        <label for="reset-phone">전화번호</label>
+        <input type="tel" id="reset-phone" class="input-box" placeholder="가입한 전화번호 입력">
+      </div>
+      <button class="btn-primary" onclick="verifyPhoneForReset()">본인 확인</button>
+    </div>
+
+    <div id="reset-step2" class="hidden">
+      <div class="form-group">
+        <label for="reset-new-pw" style="color:#E53E3E;">새 비밀번호 설정</label>
+        <div class="pw-input-wrapper">
+          <input type="password" id="reset-new-pw" class="input-box" placeholder="새로운 비밀번호 입력">
+          <button type="button" class="pw-toggle-btn" onclick="togglePasswordVisibility('reset-new-pw', this)">비밀번호 표시</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="updatePassword()">비밀번호 변경</button>
+    </div>
+
+    <button class="btn-secondary" onclick="switchView('login')">돌아가기</button>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDQa2sidgWpIQyPVyTIlCcLWHscO89QZ70",
+    authDomain: "hyeongsok-student-council.firebaseapp.com",
+    projectId: "hyeongsok-student-council",
+    storageBucket: "hyeongsok-student-council.firebasestorage.app",
+    messagingSenderId: "405153370998",
+    appId: "1:405153370998:web:75b16c68f97fb5879aa057"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ==================== UI 컨트롤 ====================
+  window.switchView = function(viewName) {
+    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+    document.getElementById(`view-${viewName}`).classList.add('active');
+    
+    if(viewName === 'reset') {
+      document.getElementById('reset-step1').classList.remove('hidden');
+      document.getElementById('reset-step2').classList.add('hidden');
+    }
+  };
+
+  window.showLoading = function(show) {
+    document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+  };
+
+  // 비밀번호 표시/숨기기 전환 토글 함수
+  window.togglePasswordVisibility = function(inputId, button) {
+    const input = document.getElementById(inputId);
+    if (input.type === "password") {
+      input.type = "text";
+      button.innerText = "비밀번호 숨기기";
+    } else {
+      input.type = "password";
+      button.innerText = "비밀번호 표시";
+    }
+  };
+
+  // 회원가입 폼 동적 변화
+  window.toggleSignupFields = function() {
+    const role = document.getElementById('user-role').value;
+    
+    document.getElementById('field-pin').classList.add('hidden');
+    document.getElementById('field-student').classList.add('hidden');
+    document.getElementById('field-teacher').classList.add('hidden');
+    document.getElementById('field-admin').classList.add('hidden'); // 관리자 아이디 필드 초기화
+    document.getElementById('field-council').classList.add('hidden');
+    document.getElementById('field-leader-type').classList.add('hidden');
+
+    if (!role) return;
+
+    // 관리자 포함하여 PIN 번호가 필요한 역할들
+    if (role === 'leader' || role === 'council' || role === 'teacher' || role === 'admin') {
+      document.getElementById('field-pin').classList.remove('hidden');
+    }
+    
+    if (role === 'leader') {
+      document.getElementById('field-leader-type').classList.remove('hidden');
+    }
+    
+    if (role === 'teacher') {
+      document.getElementById('field-teacher').classList.remove('hidden');
+    } else if (role === 'admin') {
+      document.getElementById('field-admin').classList.remove('hidden'); // 관리자 선택 시
+    } else {
+      document.getElementById('field-student').classList.remove('hidden');
+      calcId();
+    }
+
+    if (role === 'council') {
+      document.getElementById('field-council').classList.remove('hidden');
+    }
+  };
+
+  // 학번 조합 함수
+  window.calcId = function() {
+    const g = document.getElementById('reg-grade').value;
+    const c = document.getElementById('reg-class').value;
+    const n = document.getElementById('reg-num').value;
+    
+    if (c && n) {
+      const formattedC = String(c).padStart(2, '0');
+      const formattedN = String(n).padStart(2, '0');
+      document.getElementById('reg-auto-id').value = `${g}${formattedC}${formattedN}`;
+    } else {
+      document.getElementById('reg-auto-id').value = '';
+    }
+  };
+
+// ==================== Firebase 데이터 통신 ====================
+
+// 1. 회원가입 로직 (핀번호 DB 확인 버전)
+window.signup = async function() {
+  const role = document.getElementById('user-role').value;
+  const name = document.getElementById('reg-name').value;
+  const phone = document.getElementById('reg-phone').value;
+  const pw = document.getElementById('reg-pw').value;
+  const pin = document.getElementById('reg-pin').value;
+  const privacyChecked = document.getElementById('reg-privacy').checked;
+  
+  if(!role || !name || !phone || !pw) return alert("필수 정보를 모두 입력해주세요.");
+  if(!privacyChecked) return alert("개인정보 수집 및 이용에 동의하셔야 회원가입이 가능합니다.");
+
+  // 역할에 따른 최종 ID 결정
+  let finalId = document.getElementById('reg-auto-id').value;
+  if (role === 'teacher') finalId = document.getElementById('reg-teacher-id').value;
+  if (role === 'admin') finalId = document.getElementById('reg-admin-id').value; // 관리자 ID
+
+  if(!finalId) return alert("아이디 정보가 부족합니다.");
+
+  showLoading(true);
+  
+  try {
+    const pinRef = doc(db, "system_config", "pins");
+    const pinSnap = await getDoc(pinRef);
+
+    if (pinSnap.exists()) {
+      const serverPins = pinSnap.data();
+      let targetPin = "";
+
+      // 역할에 맞는 핀번호 필드 매칭 (관리자 추가)
+      if (role === 'teacher') targetPin = serverPins.teacher_pin;
+      else if (role === 'council') targetPin = serverPins.council_pin;
+      else if (role === 'leader') targetPin = serverPins.leader_pin;
+      else if (role === 'admin') targetPin = serverPins.admin_pin; // 관리자 PIN
+
+      if (targetPin && pin !== targetPin) {
+        showLoading(false);
+        return alert("입력하신 가입 인증 PIN 번호가 올바르지 않습니다.");
+      }
+    } else {
+      console.error("서버에 핀번호 설정 문서가 없습니다.");
+    }
+
+    const userRef = doc(db, "users", finalId);
+    const docSnap = await getDoc(userRef);
+    if (docSnap.exists()) {
+      showLoading(false);
+      return alert("이미 존재하는 아이디입니다.");
+    }
+
+    let finalRoleName = role;
+    if (role === 'leader') finalRoleName = document.getElementById('reg-leader-type').value;
+
+    const userData = {
+      id: finalId,
+      password: pw,
+      name: name,
+      role: finalRoleName,
+      phone: phone,
+      department: role === 'council' ? document.getElementById('reg-dept').value : null,
+      privacyAgreement: true,
+      agreementTime: new Date().toISOString()
+    };
+
+    await setDoc(userRef, userData);
+    alert("회원가입이 완료되었습니다! 로그인해주세요.");
+    
+    document.getElementById('reg-privacy').checked = false;
+    switchView('login');
+
+  } catch (error) {
+    console.error(error);
+    alert("오류가 발생했습니다: " + error.message);
+  }
+  showLoading(false);
+};
+
+  // 2. 로그인 로직
+  window.login = async function() {
+    const id = document.getElementById('login-id').value;
+    const pw = document.getElementById('login-pw').value;
+
+    if(!id || !pw) return alert("아이디와 비밀번호를 입력해주세요.");
+
+    showLoading(true);
+
+    try {
+      const userRef = doc(db, "users", id);
+      const docSnap = await getDoc(userRef);
+
+      if (docSnap.exists() && docSnap.data().password === pw) {
+        const userData = docSnap.data();
+        
+        let roleNum = 1; // 기본 학생
+        if(userData.role === 'teacher') roleNum = 45;
+        if(userData.role === '반장' || userData.role === '부반장') roleNum = 2;
+        if(userData.role === 'council') roleNum = 33;
+        if(userData.role === 'admin') roleNum = 46; // 관리자 권한 부여
+        
+        sessionStorage.setItem('userId', userData.id);
+        sessionStorage.setItem('userName', userData.name);
+        sessionStorage.setItem('userRole', roleNum);
+        
+        window.location.href = 'main.html';
+      } else {
+        alert("아이디가 존재하지 않거나 비밀번호가 틀렸습니다.");
+      }
+    } catch (error) {
+      alert("로그인 에러: " + error.message);
+    }
+    showLoading(false);
+  };
+
+  // 3. 비밀번호 찾기 (전화번호 인증) 로직
+  let resetTargetId = "";
+  
+  window.verifyPhoneForReset = async function() {
+    const id = document.getElementById('reset-id').value;
+    const phone = document.getElementById('reset-phone').value;
+
+    if(!id || !phone) return alert("정보를 모두 입력해주세요.");
+
+    showLoading(true);
+    try {
+      const userRef = doc(db, "users", id);
+      const docSnap = await getDoc(userRef);
+
+      if (docSnap.exists() && docSnap.data().phone === phone) {
+        resetTargetId = id;
+        document.getElementById('reset-step1').classList.add('hidden');
+        document.getElementById('reset-step2').classList.remove('hidden');
+        alert("본인 확인이 완료되었습니다. 새 비밀번호를 입력해주세요.");
+      } else {
+        alert("일치하는 회원 정보가 없습니다.");
+      }
+    } catch (error) {
+      alert("오류 발생: " + error.message);
+    }
+    showLoading(false);
+  };
+
+  // 4. 새 비밀번호 업데이트 로직
+  window.updatePassword = async function() {
+    const newPw = document.getElementById('reset-new-pw').value;
+    if(!newPw) return alert("새 비밀번호를 입력해주세요.");
+
+    showLoading(true);
+    try {
+      const userRef = doc(db, "users", resetTargetId);
+      await updateDoc(userRef, { password: newPw });
+      
+      alert("비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.");
+      switchView('login');
+      document.getElementById('reset-new-pw').value = '';
+    } catch (error) {
+      alert("업데이트 실패: " + error.message);
+    }
+    showLoading(false);
+  };
+
+</script>
 </body>
 </html>
