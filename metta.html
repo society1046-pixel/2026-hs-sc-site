@@ -231,13 +231,24 @@
       
       // 메뉴 구조 통일
       document.getElementById('menu-list-container').innerHTML = `
-          <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
-          <div class="menu-item" onclick="toggleSubMenu('mett')">자습 명단 관리 ▼</div>
-          <div id="mett" class="sub-menu show">
-            <div class="menu-item" onclick="goToPage('metl')">- 학생 신청 페이지</div>
-            <div class="menu-item" style="color: #7BA4DB; font-weight: bold;" onclick="goToPage('metta')">- 전체 신청 명단</div>
-            <div class="menu-item" onclick="goToPage('mett')">- 선생님 설정 페이지</div>
-          </div>
+            <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+            <div class="menu-item" onclick="goToPage('info')">공지사항</div>
+            <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
+            <div class="menu-item" onclick="toggleSubMenu('mett')">2학년부 야자 프로그램 ▼</div>
+            <div id="mett" class="sub-menu">
+                <div class="menu-item" onclick="goToPage('metl')">- 멘토멘티, 홈베이스 신청</div>
+                <div class="menu-item" onclick="goToPage('metta')">- 신청 명단</div>
+                <div class="menu-item" onclick="goToPage('mett')">- 신청 명단(선생님용)</div>
+                <div class="menu-item" onclick="goToPage('nisi')">- 야자 특수 목적반 신청(반장)</div>
+                <div class="menu-item" onclick="goToPage('nita')">- 명단관리(선생님용)</div>
+            </div>
+            <div class="menu-item" onclick="goToPage('splgin')"> 체육대회 페이지</div>
+            <div class="menu-item" onclick="toggleSubMenu('studentCouncilMenu')">학생회 ▼</div>
+            <div id="studentCouncilMenu" class="sub-menu">
+                <div class="menu-item" onclick="checkPinAndGo('sp1')">- 회장단</div>
+                <div class="menu-item" onclick="goToPage('A2')">- 카테고리 2</div>
+                <div class="menu-item" onclick="goToPage('A3')">- 카테고리 3</div>
+            </div>
         `;
       const actionBtn = document.getElementById('action-btn');
       actionBtn.innerText = "로그아웃";
