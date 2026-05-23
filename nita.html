@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>형석고등학교 학생회 - 전체 출석 명단</title>
+  
+  <style>
+    /* 1. 공통 시스템 CSS */
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
+    .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; padding: 0; }
+    .nav-center { display: flex; align-items: center; justify-content: center; }
+    .nav-logo { height: 35px; width: 35px; background-color: white; border-radius: 50%; margin-right: 10px; object-fit: contain; padding: 2px; }
+    .nav-title { font-size: 20px; font-weight: bold; margin: 0; }
+    
+    /* 2. 사이드바 */
+    .sidebar { height: 100%; width: 280px; position: fixed; top: 0; left: -280px; background-color: white; box-shadow: 4px 0 15px rgba(0,0,0,0.05); transition: 0.3s; z-index: 1000; overflow-x: hidden; display: flex; flex-direction: column; }
+    .sidebar-header { background-color: #FAFCFF; padding: 30px 20px 20px; border-bottom: 1px solid #EAF0F6; position: relative; }
+    .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; border: none; background: none; color: #A0AEC0; }
+    .user-id-text { font-size: 20px; font-weight: bold; color: #2D3748; margin: 0 0 8px 0; }
+    .user-role-badge { display: inline-block; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: bold; }
+    .menu-list { padding: 10px 0; flex-grow: 1; }
+    .menu-item { padding: 15px 25px; display: block; color: #7BA4DB; font-weight: bold; text-decoration: none; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; }
+    .menu-item:hover { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; }
+    .action-btn { margin: 20px; padding: 12px 20px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); transition: 0.2s; }
+    
+    .sub-menu { display: none; background-color: #FAFCFF; }
+    .sub-menu.show { display: block; }
+    .sub-menu .menu-item { padding-left: 40px; font-size: 14px; color: #8BAFDE; }
+
+    /* 3. 메인 컨텐츠 */
+    .container { max-width: 900px; margin: 30px auto; padding: 0 15px; display: flex; flex-direction: column; gap: 20px; }
+    .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #F4F7FB; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .card-header h2 { margin: 0; color: #2D3748; font-size: 20px; }
+    .today-badge { background-color: #EBF8FF; color: #2B6CB0; padding: 6px 12px; border-radius: 8px; font-size: 14px; font-weight: bold; }
+
+    /* 4. 장소 선택 탭 */
+    .slot-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+    @media (min-width: 600px) { .slot-container { grid-template-columns: repeat(6, 1fr); } }
+    .slot-option { border: 1px solid #CBD5E0; padding: 10px 2px; border-radius: 8px; text-align: center; cursor: pointer; background: white; font-size: 13px; color: #A0AEC0; font-weight: bold; transition: 0.2s; word-break: keep-all; }
+    .slot-option.active { background-color: #7BA4DB; color: white; border-color: #7BA4DB; }
+    .slot-option.special { border-style: dashed; }
+    .slot-option.special.active { border-style: solid; background-color: #6B46C1; border-color: #6B46C1; }
+
+    /* 5. 학생 명단 추가 모드 */
+    .add-mode-container { background: #FAFCFF; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #EAF0F6; display: none; }
+    .add-mode-container.show { display: block; animation: fadeIn 0.3s ease-out; }
+    .flex-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+    .form-control { flex: 1; min-width: 80px; padding: 10px 12px; border: 1px solid #CBD5E0; border-radius: 8px; font-size: 14px; outline: none; }
+    .form-control:focus { border-color: #7BA4DB; }
+    .btn-submit { background-color: #7BA4DB; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.2s; white-space: nowrap; }
+    .btn-toggle-add { background-color: #48BB78; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; }
+
+    /* 6. 학생 명단 표 (Table) 디자인 */
+    .table-container { width: 100%; overflow-x: auto; border: 1px solid #EAF0F6; border-radius: 8px; }
+    .nita-table { width: 100%; border-collapse: collapse; text-align: center; background: white; white-space: nowrap; min-width: 600px; }
+    .nita-table th { background-color: #F8FAFC; color: #4A5568; padding: 12px 10px; border-bottom: 2px solid #EAF0F6; font-size: 14px; font-weight: bold; }
+    .nita-table td { padding: 12px 10px; border-bottom: 1px solid #EAF0F6; font-size: 14px; color: #2D3748; vertical-align: middle; }
+    .nita-table tbody tr:hover { background-color: #FAFCFF; }
+    .nita-table tr:last-child td { border-bottom: none; }
+
+    .student-name.has-issue { color: #E53E3E; font-weight: 900; }
+    .btn-del { background: #FFF5F5; border: 1px solid #FED7D7; color: #E53E3E; padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    .btn-del:hover { background: #FED7D7; }
+
+    .tag-badge { font-size: 12px; padding: 4px 8px; border-radius: 6px; font-weight: bold; display: inline-block; }
+    .tag-nisi { background: #EBF8FF; color: #2B6CB0; border: 1px solid #90CDF4; }
+    .tag-mentor { background: #FAF5FF; color: #6B46C1; border: 1px solid #D6BCFA; }
+
+    /* 7. 상태 컨트롤 (조퇴, 기타) */
+    .status-select { width: 100%; max-width: 100px; padding: 6px; border-radius: 6px; border: 1px solid #CBD5E0; font-size: 13px; outline: none; background: #F8FAFC; cursor: pointer; text-align: center; }
+    .status-input { width: 100%; max-width: 100px; padding: 6px; border-radius: 6px; border: 1px solid #CBD5E0; font-size: 12px; outline: none; display: none; margin-top: 5px; box-sizing: border-box; }
+    .status-input.show { display: inline-block; }
+    
+    .empty-msg { text-align: center; padding: 30px; color: #A0AEC0; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+  </style>
+</head>
+<body>
+
+  <div class="navbar">
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+    <div class="nav-center">
+      <img src="https://drive.google.com/thumbnail?id=1-vFaLyktqvl_ywa0BpiBppSI6lEgsKDd&sz=w200" alt="로고" class="nav-logo">
+      <p class="nav-title">형석고등학교 학생회</p>
+    </div>
+    <div style="width: 24px;"></div> 
+  </div>
+
+  <div id="mySidebar" class="sidebar">
+    <div class="sidebar-header">
+      <button class="close-btn" onclick="toggleMenu()">×</button>
+      <h3 class="user-id-text" id="display-id">로딩중...</h3>
+      <span class="user-role-badge" id="display-role">권한 로딩중...</span>
+    </div>
+    
+    <div class="menu-list" id="menu-list-container"></div>
+    
+    <button id="action-btn" class="action-btn" style="background-color: #F19C99;" onclick="logout()">로그아웃</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h2>야간자율학습 출석부</h2>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button id="btn-toggle-add" class="btn-toggle-add" style="display: none;" onclick="toggleAddMode()">+ 이름 추가</button>
+          <div class="today-badge" id="today-date-display">0000-00-00</div>
+        </div>
+      </div>
+      
+      <div class="slot-container" id="room-tabs">
+        <div class="slot-option special active" onclick="changeRoom('1반')">1반<br><span style="font-size:10px; font-weight:normal;">(자율진로)</span></div>
+        <div class="slot-option special" onclick="changeRoom('2반')">2반<br><span style="font-size:10px; font-weight:normal;">(수행평가)</span></div>
+        <div class="slot-option" onclick="changeRoom('3반')">3반<br><span style="font-size:10px; font-weight:normal;">(일반야자)</span></div>
+        <div class="slot-option" onclick="changeRoom('4반')">4반<br><span style="font-size:10px; font-weight:normal;">(일반야자)</span></div>
+        <div class="slot-option" onclick="changeRoom('5반')">5반<br><span style="font-size:10px; font-weight:normal;">(일반야자)</span></div>
+        <div class="slot-option" onclick="changeRoom('사회실')">사회실<br><span style="font-size:10px; font-weight:normal;">(일반야자)</span></div>
+      </div>
+
+      <div class="add-mode-container" id="add-mode-form">
+        <div style="font-size:13px; color:#4A5568; margin-bottom:5px;"><b>수동 명단 추가:</b> 반/번호를 입력하면 학번(예: 20201)이 자동 생성됩니다.</div>
+        <div class="flex-row">
+          <select id="add-class" class="form-control" style="flex: 0.5;">
+            <option value="1">1반</option><option value="2">2반</option>
+            <option value="3">3반</option><option value="4">4반</option>
+            <option value="5">5반</option>
+          </select>
+          <input type="number" id="add-num" class="form-control" placeholder="번호(예: 1)" style="flex: 0.5;">
+          <input type="text" id="add-name" class="form-control" placeholder="학생 이름">
+          <button class="btn-submit" onclick="addManualStudent()">명단 등록</button>
+        </div>
+      </div>
+
+      <div id="roster-container">
+        </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleMenu() {
+      const sidebar = document.getElementById("mySidebar");
+      sidebar.style.left = sidebar.style.left === "0px" ? "-280px" : "0px";
+    }
+    function toggleSubMenu(menuId) { 
+      const subMenu = document.getElementById(menuId);
+      if(subMenu) subMenu.classList.toggle('show');
+    }
+    function goToPage(pageName) { window.location.href = pageName + '.html'; }
+    function toggleAddMode() {
+      const form = document.getElementById("add-mode-form");
+      form.classList.toggle("show");
+    }
+
+    function logout() { 
+      if(confirm('로그아웃 하시겠습니까?')) { 
+        sessionStorage.clear(); 
+        window.location.href = 'main.html'; 
+      } 
+    }
+
+    // 학생회 메뉴 핀 번호 인증 로직
+    function checkPinAndGo(pageName) {
+      const pins = { 'sp1': '1234', 'A2': '5678' };
+      const correctPin = pins[pageName];
+      if (correctPin) {
+        const userInput = prompt("접근 권한이 필요합니다.\n인증번호를 입력해주세요:");
+        if (userInput === correctPin) { goToPage(pageName); } 
+        else if (userInput !== null) { alert("인증번호가 일치하지 않습니다."); }
+      } else { goToPage(pageName); }
+    }
+
+    // 통합 사이드바 렌더링 함수
+    function initSidebar() {
+      const currentRole = Number(sessionStorage.getItem('userRole')) || 0;
+      
+      document.getElementById('menu-list-container').innerHTML = `
+        <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+        <div class="menu-item" onclick="goToPage('info')">공지사항</div>
+        <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
+        
+        <div class="menu-item" onclick="toggleSubMenu('mett-submenu')">2학년부 야자 프로그램 ▼</div>
+        <div id="mett-submenu" class="sub-menu show">
+          <div class="menu-item" onclick="goToPage('metl')">- 멘토멘티, 홈베이스 신청</div>
+          <div class="menu-item" onclick="goToPage('metta')">- 신청 명단</div>
+          <div class="menu-item" onclick="goToPage('mett')">- 신청 명단(선생님용)</div>
+          <div class="menu-item" onclick="goToPage('nisi')">- 야자 특수 목적반 신청(반장)</div>
+          <div class="menu-item" style="color: #7BA4DB; font-weight: bold;" onclick="goToPage('nita')">- 명단관리(선생님용)</div>
+        </div>
+        
+        <div class="menu-item" onclick="goToPage('splgin')">체육대회 페이지</div>
+        
+        <div class="menu-item" onclick="toggleSubMenu('studentCouncilMenu')">학생회 ▼</div>
+        <div id="studentCouncilMenu" class="sub-menu">
+          <div class="menu-item" onclick="checkPinAndGo('sp1')">- 회장단</div>
+          <div class="menu-item" onclick="goToPage('A2')">- 카테고리 2</div>
+          <div class="menu-item" onclick="goToPage('A3')">- 카테고리 3</div>
+        </div>
+        
+        <div id="admin-menu-placeholder"></div>
+      `;
+
+      if (currentRole === 46) {
+        document.getElementById('admin-menu-placeholder').innerHTML = `
+          <div class="menu-item" onclick="goToPage('user_management')" style="color: #E53E3E; border-top: 1px solid #EAF0F6; margin-top: 10px;">계정 관리</div>
+        `;
+      }
+    }
+
+    // DOM 로드 완료 시 사이드바 초기화 실행
+    window.addEventListener('DOMContentLoaded', initSidebar);
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDQa2sidgWpIQyPVyTIlCcLWHscO89QZ70",
+      authDomain: "hyeongsok-student-council.firebaseapp.com",
+      projectId: "hyeongsok-student-council",
+      storageBucket: "hyeongsok-student-council.firebasestorage.app",
+      messagingSenderId: "405153370998",
+      appId: "1:405153370998:web:75b16c68f97fb5879aa057"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 환경 변수 및 KST 설정
+    const today = new Date();
+    const kstOffset = 9 * 60 * 60 * 1000;
+    const todayKST = new Date(today.getTime() + kstOffset);
+    const todayStr = todayKST.toISOString().split('T')[0];
+    document.getElementById('today-date-display').innerText = todayStr;
+
+    // 권한 체크
+    const currentUserId = sessionStorage.getItem('userId') || sessionStorage.getItem('id') || '';
+    const currentUserName = sessionStorage.getItem('userName') || sessionStorage.getItem('name') || '';
+    const cRole = Number(sessionStorage.getItem('userRole')) || 0;
+
+    if (cRole < 45) {
+      alert("선생님 또는 관리자 전용 페이지입니다. 접근이 거부되었습니다.");
+      window.location.href = 'main.html';
+    }
+
+    document.getElementById('display-id').innerText = currentUserId + (currentUserName ? ` (${currentUserName})` : "");
+    const roleBadge = document.getElementById('display-role');
+    if(cRole === 46) { roleBadge.innerText = "관리자"; roleBadge.style.backgroundColor = "#E53E3E"; }
+    else { roleBadge.innerText = "선생님"; roleBadge.style.backgroundColor = "#48BB78"; }
+
+    // 전역 상태
+    let currentRoom = "1반";
+    let nisiData = [];        
+    let mentoringData = [];   
+    let nitaData = [];        
+    
+    let unsubNisi = null;
+    let unsubNita = null;
+    let unsubMentoring = null;
+
+    window.changeRoom = function(roomName) {
+      currentRoom = roomName;
+      document.querySelectorAll('.slot-option').forEach(opt => opt.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      
+      const isSpecial = (currentRoom === "1반" || currentRoom === "2반");
+      document.getElementById('btn-toggle-add').style.display = isSpecial ? 'none' : 'block';
+      document.getElementById('add-mode-form').classList.remove('show');
+
+      renderStudents();
+    };
+
+    window.startListening = function() {
+      // 1. NISI 출석 연동 (오늘 날짜)
+      const qNisi = query(collection(db, "daily_attendance"), where("date", "==", todayStr));
+      unsubNisi = onSnapshot(qNisi, (snapshot) => {
+        nisiData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+        renderStudents();
+      });
+
+      // 2. NITA 수동 추가 명단 연동 (오늘 날짜)
+      const qNita = query(collection(db, "general_study_attendance"), where("date", "==", todayStr));
+      unsubNita = onSnapshot(qNita, (snapshot) => {
+        nitaData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+        renderStudents();
+      });
+
+      // 3. 멘토멘티 연동
+      const qMentor = query(collection(db, "mentoring"), where("date", "==", todayStr));
+      unsubMentoring = onSnapshot(qMentor, (snapshot) => {
+        mentoringData = snapshot.docs.map(doc => doc.data());
+        renderStudents();
+      });
+    };
+
+    // 표 형식 화면 렌더링
+    window.renderStudents = function() {
+      const container = document.getElementById('roster-container');
+      let listToRender = [];
+
+      if (currentRoom === "1반") {
+        listToRender = nisiData.filter(d => d.purpose === "자율진로전용반");
+      } else if (currentRoom === "2반") {
+        listToRender = nisiData.filter(d => d.purpose === "수행평가반");
+      } else {
+        listToRender = nitaData.filter(d => d.room === currentRoom);
+      }
+
+      if (listToRender.length === 0) {
+        container.innerHTML = `<div class="empty-msg">${currentRoom}에 등록된 명단이 없습니다.</div>`;
+        return;
+      }
+
+      // ★ 교시별, 반별(학번) 정렬 로직 강화 ★
+      listToRender.sort((a, b) => {
+        // 1반/2반일 경우 '교시'를 우선 정렬 (1교시 -> 2교시 순)
+        if ((currentRoom === "1반" || currentRoom === "2반") && a.period && b.period) {
+          if (a.period !== b.period) {
+            return String(a.period).localeCompare(String(b.period)); 
+          }
+        }
+        // 교시가 같거나 일반 자습실이면 학번(반/번호) 순으로 정렬
+        return String(a.studentId).localeCompare(String(b.studentId));
+      });
+
+      let tableHTML = `<div class="table-container"><table class="nita-table">`;
+
+      // 1반, 2반용 테이블 (간략형)
+      if (currentRoom === "1반" || currentRoom === "2반") {
+        tableHTML += `<thead><tr>
+            <th style="width: 80px;">학번</th>
+            <th>이름</th>
+            <th>신청 교시</th>
+            <th>비고</th>
+          </tr></thead><tbody>`;
+
+        listToRender.forEach(std => {
+          let badges = '';
+          if (mentoringData.find(m => String(m.studentId) === String(std.studentId))) {
+            badges += `<span class="tag-badge tag-mentor">멘토멘티</span>`;
+          }
+          
+          tableHTML += `<tr>
+            <td style="color: #A0AEC0;">${std.studentId}</td>
+            <td class="student-name" style="font-weight: bold;">${std.studentName}</td>
+            <td><span class="tag-badge tag-nisi">${std.period}</span></td>
+            <td>${badges}</td>
+          </tr>`;
+        });
+      } 
+      // 3, 4, 5반, 사회실 테이블 (상세형 & NISI 연동)
+      else {
+        tableHTML += `<thead><tr>
+            <th style="width: 80px;">학번</th>
+            <th>이름</th>
+            <th style="width: 140px;">1교시</th>
+            <th style="width: 140px;">2교시</th>
+            <th>비고</th>
+            <th style="width: 70px;">관리</th>
+          </tr></thead><tbody>`;
+
+        listToRender.forEach(std => {
+          const s1 = std.status1 || "정상";
+          const s1d = std.status1_desc || "";
+          const s2 = std.status2 || "정상";
+          const s2d = std.status2_desc || "";
+          
+          const hasIssue = (s1 !== "정상" && s1 !== "") || (s2 !== "정상" && s2 !== "");
+          const nameClass = hasIssue ? "student-name has-issue" : "student-name";
+          
+          let badges = '';
+          if (mentoringData.find(m => String(m.studentId) === String(std.studentId))) {
+            badges += `<span class="tag-badge tag-mentor">멘토멘티</span>`;
+          }
+
+          // 해당 학생이 NISI에 신청한 이력이 있는지 확인
+          const myNisi = nisiData.filter(n => String(n.studentId) === String(std.studentId));
+          const nisi1 = myNisi.find(n => n.period === "1교시");
+          const nisi2 = myNisi.find(n => n.period === "2교시");
+
+          // 1교시 셀 렌더링
+          let cell1 = '';
+          if (nisi1) {
+            const locName = nisi1.purpose === '자율진로전용반' ? '1반(자율)' : '2반(수행)';
+            cell1 = `<span class="tag-badge tag-nisi">${locName}</span>`;
+          } else {
+            cell1 = `
+              <select class="status-select" onchange="handleStatusChange(this, '${std.docId}', 1)">
+                <option value="정상" ${s1==="정상"?"selected":""}>정상</option>
+                <option value="조퇴" ${s1==="조퇴"?"selected":""}>조퇴</option>
+                <option value="기타" ${s1==="기타"?"selected":""}>기타</option>
+              </select>
+              <input type="text" class="status-input ${s1==="기타"?"show":""}" value="${s1d}" 
+                     placeholder="사유 입력" onchange="saveDesc('${std.docId}', 1, this.value)">
+            `;
+          }
+
+          // 2교시 셀 렌더링
+          let cell2 = '';
+          if (nisi2) {
+            const locName = nisi2.purpose === '자율진로전용반' ? '1반(자율)' : '2반(수행)';
+            cell2 = `<span class="tag-badge tag-nisi">${locName}</span>`;
+          } else {
+            cell2 = `
+              <select class="status-select" onchange="handleStatusChange(this, '${std.docId}', 2)">
+                <option value="정상" ${s2==="정상"?"selected":""}>정상</option>
+                <option value="조퇴" ${s2==="조퇴"?"selected":""}>조퇴</option>
+                <option value="기타" ${s2==="기타"?"selected":""}>기타</option>
+              </select>
+              <input type="text" class="status-input ${s2==="기타"?"show":""}" value="${s2d}" 
+                     placeholder="사유 입력" onchange="saveDesc('${std.docId}', 2, this.value)">
+            `;
+          }
+
+          tableHTML += `<tr>
+            <td style="color: #A0AEC0;">${std.studentId}</td>
+            <td class="${nameClass}" style="font-weight: bold;">${std.studentName}</td>
+            <td>${cell1}</td>
+            <td>${cell2}</td>
+            <td>${badges}</td>
+            <td><button class="btn-del" onclick="deleteNitaStudent('${std.docId}')">삭제</button></td>
+          </tr>`;
+        });
+      }
+
+      tableHTML += `</tbody></table></div>`;
+      container.innerHTML = tableHTML;
+    };
+
+    // 상태 Select 변경 이벤트 (정상, 조퇴, 기타)
+    window.handleStatusChange = async function(selectEl, docId, period) {
+      const val = selectEl.value;
+      const inputEl = selectEl.nextElementSibling;
+      let descVal = "";
+
+      if (val === "기타") {
+        inputEl.classList.add("show");
+        inputEl.focus();
+        descVal = inputEl.value;
+      } else {
+        inputEl.classList.remove("show");
+        inputEl.value = ""; 
+      }
+
+      const updateData = {};
+      if (period === 1) { updateData.status1 = val; updateData.status1_desc = descVal; }
+      else { updateData.status2 = val; updateData.status2_desc = descVal; }
+
+      await setDoc(doc(db, "general_study_attendance", docId), updateData, { merge: true });
+    };
+
+    // 기타 사유 Text Input 변경 이벤트
+    window.saveDesc = async function(docId, period, descVal) {
+      const updateData = {};
+      if (period === 1) updateData.status1_desc = descVal;
+      else updateData.status2_desc = descVal;
+
+      await setDoc(doc(db, "general_study_attendance", docId), updateData, { merge: true });
+    };
+
+    // 수동 명단 추가 (20+반+번호 조합으로 ID 생성)
+    window.addManualStudent = async function() {
+      const clsNum = document.getElementById('add-class').value;
+      const stdNum = document.getElementById('add-num').value.trim();
+      const stdName = document.getElementById('add-name').value.trim();
+
+      if (!stdNum || !stdName) {
+        alert("번호와 이름을 모두 입력해주세요.");
+        return;
+      }
+
+      const paddedNum = stdNum.length === 1 ? '0' + stdNum : stdNum;
+      const generatedId = `20${clsNum}${paddedNum}`;
+
+      const docId = `${todayStr}_${currentRoom}_${generatedId}`;
+
+      try {
+        await setDoc(doc(db, "general_study_attendance", docId), {
+          date: todayStr,
+          room: currentRoom,
+          studentId: generatedId,
+          studentName: stdName,
+          status1: "정상",
+          status1_desc: "",
+          status2: "정상",
+          status2_desc: "",
+          timestamp: new Date().toISOString()
+        });
+
+        document.getElementById('add-num').value = '';
+        document.getElementById('add-name').value = '';
+        document.getElementById('add-num').focus(); // 다시 번호 입력창으로 포커스
+      } catch (e) {
+        console.error(e);
+        alert("추가 중 오류가 발생했습니다.");
+      }
+    };
+
+    window.deleteNitaStudent = async function(docId) {
+      if(confirm('이 학생을 명단에서 삭제하시겠습니까?')) {
+        await deleteDoc(doc(db, "general_study_attendance", docId));
+      }
+    };
+
+    // 새로 추가된 엔터키 이벤트 리스너
+    
+    // 1. 번호 입력 후 엔터 누르면 이름 입력창으로 이동
+    document.getElementById('add-num').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault(); 
+        document.getElementById('add-name').focus();
+      }
+    });
+
+    // 2. 이름 입력 후 엔터 누르면 명단 추가 함수 실행
+    document.getElementById('add-name').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault(); 
+        window.addManualStudent(); 
+      }
+    });
+
+    window.startListening();
+  </script>
+</body>
+</html>
