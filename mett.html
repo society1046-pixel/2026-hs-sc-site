@@ -140,7 +140,7 @@
     </div>
 
     <div class="card">
-      <h3>학생 추가</h3>
+      <h3>학생 강제 추가</h3>
       <p class="info-text" style="margin-bottom: 15px;">* 설정된 시간/정원과 무관하게 관리자가 명단에 직접 추가합니다.</p>
       
       <div class="form-row">
@@ -386,14 +386,37 @@
       roleDisplay.style.backgroundColor = currentRole === 46 ? "#E53E3E" : "#82CA9D";
       
       document.getElementById('menu-list-container').innerHTML = `
-          <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
-          <div class="menu-item" onclick="toggleSubMenu('mett')">자습 명단 관리 ▼</div>
-          <div id="mett" class="sub-menu show">
-            <div class="menu-item" onclick="goToPage('metl')">- 학생 신청 페이지</div>
-            <div class="menu-item" onclick="goToPage('metta')">- 전체 신청 명단</div>
-            <div class="menu-item" style="color: #7BA4DB; font-weight: bold;" onclick="goToPage('mett')">- 선생님 설정 페이지</div>
-          </div>
+        <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+        <div class="menu-item" onclick="goToPage('info')">공지사항</div>
+        <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
+        
+        <div class="menu-item" onclick="toggleSubMenu('mett-submenu')">2학년부 야자 프로그램 ▼</div>
+        <div id="mett-submenu" class="sub-menu show">
+          <div class="menu-item" onclick="goToPage('metl')">- 멘토멘티, 홈베이스 신청</div>
+          <div class="menu-item" onclick="goToPage('metta')">- 신청 명단</div>
+          <div class="menu-item" style="color: #7BA4DB; font-weight: bold;" onclick="goToPage('mett')">- 신청 명단(선생님용)</div>
+          <div class="menu-item" onclick="goToPage('nisi')">- 야자 특수 목적반 신청(반장)</div>
+          <div class="menu-item" onclick="goToPage('nita')">- 명단관리(선생님용)</div>
+        </div>
+        
+        <div class="menu-item" onclick="goToPage('splgin')">체육대회 페이지</div>
+        
+        <div class="menu-item" onclick="toggleSubMenu('studentCouncilMenu')">학생회 ▼</div>
+        <div id="studentCouncilMenu" class="sub-menu">
+          <div class="menu-item" onclick="checkPinAndGo('sp1')">- 회장단</div>
+          <div class="menu-item" onclick="goToPage('A2')">- 카테고리 2</div>
+          <div class="menu-item" onclick="goToPage('A3')">- 카테고리 3</div>
+        </div>
+        
+        <div id="admin-menu-placeholder"></div>
+      `;
+
+      if (currentRole === 46) {
+        document.getElementById('admin-menu-placeholder').innerHTML = `
+          <div class="menu-item" onclick="goToPage('user_management')" style="color: #E53E3E; border-top: 1px solid #EAF0F6; margin-top: 10px;">계정 관리</div>
         `;
+      }
+
       const actionBtn = document.getElementById('action-btn');
       actionBtn.innerText = "로그아웃";
       actionBtn.style.backgroundColor = "#F19C99";
@@ -408,6 +431,17 @@
     function toggleSubMenu(menuId) { 
       const subMenu = document.getElementById(menuId);
       if(subMenu) subMenu.classList.toggle('show');
+    }
+
+    // 학생회 메뉴 핀 번호 인증 로직
+    function checkPinAndGo(pageName) {
+      const pins = { 'sp1': '1234', 'A2': '5678' };
+      const correctPin = pins[pageName];
+      if (correctPin) {
+        const userInput = prompt("접근 권한이 필요합니다.\n인증번호를 입력해주세요:");
+        if (userInput === correctPin) { goToPage(pageName); } 
+        else if (userInput !== null) { alert("인증번호가 일치하지 않습니다."); }
+      } else { goToPage(pageName); }
     }
 
     function formatTimeInput(target) {
