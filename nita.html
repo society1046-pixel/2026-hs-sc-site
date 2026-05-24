@@ -282,10 +282,29 @@
         renderStudents();
       });
 
-      // 2. NITA 수동 추가 명단 연동 (오늘 날짜)
-      const qNita = query(collection(db, "general_study_attendance"), where("date", "==", todayStr));
+      // 2. NITA 수동 추가 명단 연동 (명단을 날짜 상관없이 가져오되 최신 상태 유지)
+      const qNita = collection(db, "general_study_attendance");
       unsubNita = onSnapshot(qNita, (snapshot) => {
-        nitaData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+        const allDocs = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+        
+        // 학번(studentId) 기준으로 가장 최신 데이터만 필터링하여 명단이 사라지지 않도록 유지
+        const studentMap = new Map();
+        allDocs.forEach(d => {
+          if (!d.studentId) return; 
+
+          if (!studentMap.has(d.studentId)) {
+            studentMap.set(d.studentId, d);
+          } else {
+            const existing = studentMap.get(d.studentId);
+            const currentObjTime = new Date(d.timestamp || 0);
+            const existingTime = new Date(existing.timestamp || 0);
+            if (currentObjTime > existingTime) {
+              studentMap.set(d.studentId, d);
+            }
+          }
+        });
+        
+        nitaData = Array.from(studentMap.values());
         renderStudents();
       });
 
@@ -317,13 +336,11 @@
 
       // ★ 교시별, 반별(학번) 정렬 로직 강화 ★
       listToRender.sort((a, b) => {
-        // 1반/2반일 경우 '교시'를 우선 정렬 (1교시 -> 2교시 순)
         if ((currentRoom === "1반" || currentRoom === "2반") && a.period && b.period) {
           if (a.period !== b.period) {
             return String(a.period).localeCompare(String(b.period)); 
           }
         }
-        // 교시가 같거나 일반 자습실이면 학번(반/번호) 순으로 정렬
         return String(a.studentId).localeCompare(String(b.studentId));
       });
 
@@ -364,10 +381,15 @@
           </tr></thead><tbody>`;
 
         listToRender.forEach(std => {
-          const s1 = std.status1 || "정상";
-          const s1d = std.status1_desc || "";
-          const s2 = std.status2 || "정상";
-          const s2d = std.status2_desc || "";
+          
+          // ⭐ 핵심 로직: 해당 학생의 상태 변경 기록 날짜가 오늘인지 확인
+          const isToday = std.date === todayStr;
+          
+          // 오늘 날짜가 아니면 UI 상에서 무조건 '정상'으로 초기화하여 표기
+          const s1 = isToday ? (std.status1 || "정상") : "정상";
+          const s1d = isToday ? (std.status1_desc || "") : "";
+          const s2 = isToday ? (std.status2 || "정상") : "정상";
+          const s2d = isToday ? (std.status2_desc || "") : "";
           
           const hasIssue = (s1 !== "정상" && s1 !== "") || (s2 !== "정상" && s2 !== "");
           const nameClass = hasIssue ? "student-name has-issue" : "student-name";
@@ -446,23 +468,59 @@
         inputEl.value = ""; 
       }
 
-      const updateData = {};
-      if (period === 1) { updateData.status1 = val; updateData.status1_desc = descVal; }
-      else { updateData.status2 = val; updateData.status2_desc = descVal; }
+      const std = nitaData.find(d => d.docId === docId);
+      const isToday = std && std.date === todayStr;
+
+      // 업데이트할 데이터 (시간 및 날짜 갱신)
+      const updateData = {
+        date: todayStr,
+        timestamp: new Date().toISOString()
+      };
+
+      if (!isToday) {
+        // 날짜가 바뀌어 오늘 처음으로 상태를 수정하는 경우, 수정하지 않는 교시는 '정상'으로 덮어씌움
+        updateData.status1 = period === 1 ? val : "정상";
+        updateData.status1_desc = period === 1 ? descVal : "";
+        updateData.status2 = period === 2 ? val : "정상";
+        updateData.status2_desc = period === 2 ? descVal : "";
+      } else {
+        // 이미 오늘 수정한 이력이 있다면, 변경한 교시만 업데이트
+        if (period === 1) { 
+          updateData.status1 = val; 
+          updateData.status1_desc = descVal; 
+        } else { 
+          updateData.status2 = val; 
+          updateData.status2_desc = descVal; 
+        }
+      }
 
       await setDoc(doc(db, "general_study_attendance", docId), updateData, { merge: true });
     };
 
     // 기타 사유 Text Input 변경 이벤트
     window.saveDesc = async function(docId, period, descVal) {
-      const updateData = {};
-      if (period === 1) updateData.status1_desc = descVal;
-      else updateData.status2_desc = descVal;
+      const std = nitaData.find(d => d.docId === docId);
+      const isToday = std && std.date === todayStr;
+
+      const updateData = {
+        date: todayStr,
+        timestamp: new Date().toISOString()
+      };
+
+      if (!isToday) {
+        updateData.status1 = period === 1 ? "기타" : "정상";
+        updateData.status1_desc = period === 1 ? descVal : "";
+        updateData.status2 = period === 2 ? "기타" : "정상";
+        updateData.status2_desc = period === 2 ? descVal : "";
+      } else {
+        if (period === 1) updateData.status1_desc = descVal;
+        else updateData.status2_desc = descVal;
+      }
 
       await setDoc(doc(db, "general_study_attendance", docId), updateData, { merge: true });
     };
 
-    // 수동 명단 추가 (20+반+번호 조합으로 ID 생성)
+    // 수동 명단 추가 (명단 보존을 위해 docId에서 날짜 제거)
     window.addManualStudent = async function() {
       const clsNum = document.getElementById('add-class').value;
       const stdNum = document.getElementById('add-num').value.trim();
@@ -476,7 +534,8 @@
       const paddedNum = stdNum.length === 1 ? '0' + stdNum : stdNum;
       const generatedId = `20${clsNum}${paddedNum}`;
 
-      const docId = `${todayStr}_${currentRoom}_${generatedId}`;
+      // 날짜가 바뀌어도 명단이 사라지지 않도록 고정된 docId(nita_학번) 생성
+      const docId = `nita_${generatedId}`;
 
       try {
         await setDoc(doc(db, "general_study_attendance", docId), {
@@ -505,8 +564,6 @@
         await deleteDoc(doc(db, "general_study_attendance", docId));
       }
     };
-
-    // 새로 추가된 엔터키 이벤트 리스너
     
     // 1. 번호 입력 후 엔터 누르면 이름 입력창으로 이동
     document.getElementById('add-num').addEventListener('keypress', function(e) {
