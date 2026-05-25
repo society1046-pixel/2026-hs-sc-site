@@ -65,9 +65,10 @@
     .btn-del { background: #FFF5F5; border: 1px solid #FED7D7; color: #E53E3E; padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
     .btn-del:hover { background: #FED7D7; }
 
-    .tag-badge { font-size: 12px; padding: 4px 8px; border-radius: 6px; font-weight: bold; display: inline-block; }
+    .tag-badge { font-size: 12px; padding: 4px 8px; border-radius: 6px; font-weight: bold; display: inline-block; margin-right: 4px; }
     .tag-nisi { background: #EBF8FF; color: #2B6CB0; border: 1px solid #90CDF4; }
     .tag-mentor { background: #FAF5FF; color: #6B46C1; border: 1px solid #D6BCFA; }
+    .tag-homebase { background: #E6FFFA; color: #319795; border: 1px solid #81E6D9; }
 
     /* 7. 상태 컨트롤 (조퇴, 기타) */
     .status-select { width: 100%; max-width: 100px; padding: 6px; border-radius: 6px; border: 1px solid #CBD5E0; font-size: 13px; outline: none; background: #F8FAFC; cursor: pointer; text-align: center; }
@@ -162,7 +163,6 @@
       } 
     }
 
-    // 학생회 메뉴 핀 번호 인증 로직
     function checkPinAndGo(pageName) {
       const pins = { 'sp1': '1234', 'A2': '5678' };
       const correctPin = pins[pageName];
@@ -173,7 +173,6 @@
       } else { goToPage(pageName); }
     }
 
-    // 통합 사이드바 렌더링 함수
     function initSidebar() {
       const currentRole = Number(sessionStorage.getItem('userRole')) || 0;
       
@@ -182,7 +181,7 @@
         <div class="menu-item" onclick="goToPage('info')">공지사항</div>
         <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
         
-        <div class="menu-item" onclick="toggleSubMenu('mett-submenu')">2학년부 야자 프로그램(이음의 '도약') ▼</div>
+        <div class="menu-item" onclick="toggleSubMenu('mett-submenu')">2학년부 야자 프로그램 ▼</div>
         <div id="mett-submenu" class="sub-menu show">
           <div class="menu-item" onclick="goToPage('metl')">- 멘토멘티, 홈베이스 신청</div>
           <div class="menu-item" onclick="goToPage('metta')">- 신청 명단</div>
@@ -210,7 +209,6 @@
       }
     }
 
-    // DOM 로드 완료 시 사이드바 초기화 실행
     window.addEventListener('DOMContentLoaded', initSidebar);
   </script>
 
@@ -230,14 +228,14 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 환경 변수 및 KST 설정
     const today = new Date();
     const kstOffset = 9 * 60 * 60 * 1000;
     const todayKST = new Date(today.getTime() + kstOffset);
-    const todayStr = todayKST.toISOString().split('T')[0];
+    const todayStr = todayKST.toISOString().split('T')[0]; 
+    const yyyyMMdd = todayStr.replace(/-/g, ''); 
+    
     document.getElementById('today-date-display').innerText = todayStr;
 
-    // 권한 체크
     const currentUserId = sessionStorage.getItem('userId') || sessionStorage.getItem('id') || '';
     const currentUserName = sessionStorage.getItem('userName') || sessionStorage.getItem('name') || '';
     const cRole = Number(sessionStorage.getItem('userRole')) || 0;
@@ -252,15 +250,16 @@
     if(cRole === 46) { roleBadge.innerText = "관리자"; roleBadge.style.backgroundColor = "#E53E3E"; }
     else { roleBadge.innerText = "선생님"; roleBadge.style.backgroundColor = "#48BB78"; }
 
-    // 전역 상태
     let currentRoom = "1반";
     let nisiData = [];        
     let mentoringData = [];   
     let nitaData = [];        
+    let studyAppData = []; 
     
     let unsubNisi = null;
     let unsubNita = null;
     let unsubMentoring = null;
+    let unsubStudyApp = null; 
 
     window.changeRoom = function(roomName) {
       currentRoom = roomName;
@@ -275,48 +274,48 @@
     };
 
     window.startListening = function() {
-      // 1. NISI 출석 연동 (오늘 날짜)
+      // 1. 1~2반 NISI 데이터 연동
       const qNisi = query(collection(db, "daily_attendance"), where("date", "==", todayStr));
       unsubNisi = onSnapshot(qNisi, (snapshot) => {
         nisiData = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
         renderStudents();
       });
 
-      // 2. NITA 수동 추가 명단 연동 (명단을 날짜 상관없이 가져오되 최신 상태 유지)
+      // 2. 3~5반 NITA 수동 명단 연동
       const qNita = collection(db, "general_study_attendance");
       unsubNita = onSnapshot(qNita, (snapshot) => {
         const allDocs = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
-        
-        // 학번(studentId) 기준으로 가장 최신 데이터만 필터링하여 명단이 사라지지 않도록 유지
         const studentMap = new Map();
         allDocs.forEach(d => {
           if (!d.studentId) return; 
-
           if (!studentMap.has(d.studentId)) {
             studentMap.set(d.studentId, d);
           } else {
             const existing = studentMap.get(d.studentId);
             const currentObjTime = new Date(d.timestamp || 0);
             const existingTime = new Date(existing.timestamp || 0);
-            if (currentObjTime > existingTime) {
-              studentMap.set(d.studentId, d);
-            }
+            if (currentObjTime > existingTime) { studentMap.set(d.studentId, d); }
           }
         });
-        
         nitaData = Array.from(studentMap.values());
         renderStudents();
       });
 
-      // 3. 멘토멘티 연동
+      // 3. 기존 멘토멘티 데이터 (호환성 유지)
       const qMentor = query(collection(db, "mentoring"), where("date", "==", todayStr));
       unsubMentoring = onSnapshot(qMentor, (snapshot) => {
         mentoringData = snapshot.docs.map(doc => doc.data());
         renderStudents();
       });
+
+      // 4. ⭐ 완벽 동기화된 앱 신청 데이터 연동 (metl.html 기반)
+      const qStudyApp = query(collection(db, "study_applications"), where("applyDate", "==", yyyyMMdd));
+      unsubStudyApp = onSnapshot(qStudyApp, (snapshot) => {
+        studyAppData = snapshot.docs.map(doc => doc.data());
+        renderStudents();
+      });
     };
 
-    // 표 형식 화면 렌더링
     window.renderStudents = function() {
       const container = document.getElementById('roster-container');
       let listToRender = [];
@@ -326,7 +325,33 @@
       } else if (currentRoom === "2반") {
         listToRender = nisiData.filter(d => d.purpose === "수행평가반");
       } else {
+        // 일반 명단 불러오기
         listToRender = nitaData.filter(d => d.room === currentRoom);
+
+        // ⭐ 명단 자동 병합 로직 (해당 반 신청자를 표에 자동으로 띄워줌)
+        if (currentRoom.match(/^[3-5]반$/)) {
+          const classNum = currentRoom.replace('반', '');
+          const prefix = `20${classNum}`; // 예: 203 (3반)
+          
+          studyAppData.forEach(app => {
+            const sid = String(app.id);
+            // 학번 앞자리가 현재 선택한 반과 일치하면 리스트에 추가 (수동 명단에 없을 경우만)
+            if (sid.startsWith(prefix)) {
+              if (!listToRender.find(d => String(d.studentId) === sid)) {
+                listToRender.push({
+                  docId: `auto_${sid}`,
+                  studentId: sid,
+                  studentName: app.name,
+                  room: currentRoom,
+                  date: todayStr,
+                  status1: "정상", status1_desc: "",
+                  status2: "정상", status2_desc: "",
+                  isAuto: true // 자동 추가됨을 표시하는 플래그
+                });
+              }
+            }
+          });
+        }
       }
 
       if (listToRender.length === 0) {
@@ -334,19 +359,15 @@
         return;
       }
 
-      // ★ 교시별, 반별(학번) 정렬 로직 강화 ★
       listToRender.sort((a, b) => {
         if ((currentRoom === "1반" || currentRoom === "2반") && a.period && b.period) {
-          if (a.period !== b.period) {
-            return String(a.period).localeCompare(String(b.period)); 
-          }
+          if (a.period !== b.period) return String(a.period).localeCompare(String(b.period)); 
         }
         return String(a.studentId).localeCompare(String(b.studentId));
       });
 
       let tableHTML = `<div class="table-container"><table class="nita-table">`;
 
-      // 1반, 2반용 테이블 (간략형)
       if (currentRoom === "1반" || currentRoom === "2반") {
         tableHTML += `<thead><tr>
             <th style="width: 80px;">학번</th>
@@ -356,8 +377,13 @@
           </tr></thead><tbody>`;
 
         listToRender.forEach(std => {
+          const myApp = studyAppData.find(app => String(app.id) === String(std.studentId));
+          let isHomebaseAny = myApp && (myApp.slot1_type === 'homebase' || myApp.slot2_type === 'homebase');
+          let isMentorAny = myApp && (myApp.slot1_type === 'mentor' || myApp.slot2_type === 'mentor');
+
           let badges = '';
-          if (mentoringData.find(m => String(m.studentId) === String(std.studentId))) {
+          if (isHomebaseAny) badges += `<span class="tag-badge tag-homebase">홈베이스</span>`;
+          if (isMentorAny || mentoringData.find(m => String(m.studentId) === String(std.studentId))) {
             badges += `<span class="tag-badge tag-mentor">멘토멘티</span>`;
           }
           
@@ -369,7 +395,6 @@
           </tr>`;
         });
       } 
-      // 3, 4, 5반, 사회실 테이블 (상세형 & NISI 연동)
       else {
         tableHTML += `<thead><tr>
             <th style="width: 80px;">학번</th>
@@ -381,11 +406,7 @@
           </tr></thead><tbody>`;
 
         listToRender.forEach(std => {
-          
-          // ⭐ 핵심 로직: 해당 학생의 상태 변경 기록 날짜가 오늘인지 확인
           const isToday = std.date === todayStr;
-          
-          // 오늘 날짜가 아니면 UI 상에서 무조건 '정상'으로 초기화하여 표기
           const s1 = isToday ? (std.status1 || "정상") : "정상";
           const s1d = isToday ? (std.status1_desc || "") : "";
           const s2 = isToday ? (std.status2 || "정상") : "정상";
@@ -394,21 +415,29 @@
           const hasIssue = (s1 !== "정상" && s1 !== "") || (s2 !== "정상" && s2 !== "");
           const nameClass = hasIssue ? "student-name has-issue" : "student-name";
           
+          const myApp = studyAppData.find(app => String(app.id) === String(std.studentId));
+          let isHomebase1 = myApp && myApp.slot1_type === 'homebase';
+          let isHomebase2 = myApp && myApp.slot2_type === 'homebase';
+          let isMentor1 = myApp && myApp.slot1_type === 'mentor';
+          let isMentor2 = myApp && myApp.slot2_type === 'mentor';
+          let isMentorAny = isMentor1 || isMentor2;
+
           let badges = '';
-          if (mentoringData.find(m => String(m.studentId) === String(std.studentId))) {
+          if (isMentorAny || mentoringData.find(m => String(m.studentId) === String(std.studentId))) {
             badges += `<span class="tag-badge tag-mentor">멘토멘티</span>`;
           }
 
-          // 해당 학생이 NISI에 신청한 이력이 있는지 확인
           const myNisi = nisiData.filter(n => String(n.studentId) === String(std.studentId));
           const nisi1 = myNisi.find(n => n.period === "1교시");
           const nisi2 = myNisi.find(n => n.period === "2교시");
 
-          // 1교시 셀 렌더링
           let cell1 = '';
           if (nisi1) {
-            const locName = nisi1.purpose === '자율진로전용반' ? '1반(자율)' : '2반(수행)';
-            cell1 = `<span class="tag-badge tag-nisi">${locName}</span>`;
+            cell1 = `<span class="tag-badge tag-nisi">${nisi1.purpose === '자율진로전용반' ? '1반(자율)' : '2반(수행)'}</span>`;
+          } else if (isHomebase1) {
+            cell1 = `<span class="tag-badge tag-homebase">홈베이스</span>`;
+          } else if (isMentor1) {
+            cell1 = `<span class="tag-badge tag-mentor">멘토멘티</span>`;
           } else {
             cell1 = `
               <select class="status-select" onchange="handleStatusChange(this, '${std.docId}', 1)">
@@ -421,11 +450,13 @@
             `;
           }
 
-          // 2교시 셀 렌더링
           let cell2 = '';
           if (nisi2) {
-            const locName = nisi2.purpose === '자율진로전용반' ? '1반(자율)' : '2반(수행)';
-            cell2 = `<span class="tag-badge tag-nisi">${locName}</span>`;
+            cell2 = `<span class="tag-badge tag-nisi">${nisi2.purpose === '자율진로전용반' ? '1반(자율)' : '2반(수행)'}</span>`;
+          } else if (isHomebase2) {
+            cell2 = `<span class="tag-badge tag-homebase">홈베이스</span>`;
+          } else if (isMentor2) {
+            cell2 = `<span class="tag-badge tag-mentor">멘토멘티</span>`;
           } else {
             cell2 = `
               <select class="status-select" onchange="handleStatusChange(this, '${std.docId}', 2)">
@@ -438,13 +469,17 @@
             `;
           }
 
+          let deleteBtnHTML = std.isAuto 
+            ? `<span style="color:#A0AEC0; font-size:12px;">자동추가</span>` 
+            : `<button class="btn-del" onclick="deleteNitaStudent('${std.docId}')">삭제</button>`;
+
           tableHTML += `<tr>
             <td style="color: #A0AEC0;">${std.studentId}</td>
             <td class="${nameClass}" style="font-weight: bold;">${std.studentName}</td>
             <td>${cell1}</td>
             <td>${cell2}</td>
             <td>${badges}</td>
-            <td><button class="btn-del" onclick="deleteNitaStudent('${std.docId}')">삭제</button></td>
+            <td>${deleteBtnHTML}</td>
           </tr>`;
         });
       }
@@ -453,7 +488,6 @@
       container.innerHTML = tableHTML;
     };
 
-    // 상태 Select 변경 이벤트 (정상, 조퇴, 기타)
     window.handleStatusChange = async function(selectEl, docId, period) {
       const val = selectEl.value;
       const inputEl = selectEl.nextElementSibling;
@@ -468,42 +502,63 @@
         inputEl.value = ""; 
       }
 
-      const std = nitaData.find(d => d.docId === docId);
-      const isToday = std && std.date === todayStr;
+      let targetDocId = docId;
+      let isToday = false;
+      let std = nitaData.find(d => d.docId === docId);
 
-      // 업데이트할 데이터 (시간 및 날짜 갱신)
+      // 자동 추가된 학생의 상태를 변경 시 파이어베이스 문서 강제 생성
+      if (docId.startsWith("auto_")) {
+        const studentId = docId.replace("auto_", "");
+        targetDocId = `nita_${studentId}`;
+        const autoStd = studyAppData.find(a => String(a.id) === studentId);
+        std = { studentId: studentId, studentName: autoStd.name, room: currentRoom };
+      } else if (std) {
+        isToday = std.date === todayStr;
+      }
+
       const updateData = {
         date: todayStr,
+        room: std.room,
+        studentId: std.studentId,
+        studentName: std.studentName,
         timestamp: new Date().toISOString()
       };
 
       if (!isToday) {
-        // 날짜가 바뀌어 오늘 처음으로 상태를 수정하는 경우, 수정하지 않는 교시는 '정상'으로 덮어씌움
         updateData.status1 = period === 1 ? val : "정상";
         updateData.status1_desc = period === 1 ? descVal : "";
         updateData.status2 = period === 2 ? val : "정상";
         updateData.status2_desc = period === 2 ? descVal : "";
       } else {
-        // 이미 오늘 수정한 이력이 있다면, 변경한 교시만 업데이트
         if (period === 1) { 
-          updateData.status1 = val; 
-          updateData.status1_desc = descVal; 
+          updateData.status1 = val; updateData.status1_desc = descVal; 
         } else { 
-          updateData.status2 = val; 
-          updateData.status2_desc = descVal; 
+          updateData.status2 = val; updateData.status2_desc = descVal; 
         }
       }
 
-      await setDoc(doc(db, "general_study_attendance", docId), updateData, { merge: true });
+      await setDoc(doc(db, "general_study_attendance", targetDocId), updateData, { merge: true });
     };
 
-    // 기타 사유 Text Input 변경 이벤트
     window.saveDesc = async function(docId, period, descVal) {
-      const std = nitaData.find(d => d.docId === docId);
-      const isToday = std && std.date === todayStr;
+      let targetDocId = docId;
+      let isToday = false;
+      let std = nitaData.find(d => d.docId === docId);
+
+      if (docId.startsWith("auto_")) {
+        const studentId = docId.replace("auto_", "");
+        targetDocId = `nita_${studentId}`;
+        const autoStd = studyAppData.find(a => String(a.id) === studentId);
+        std = { studentId: studentId, studentName: autoStd.name, room: currentRoom };
+      } else if (std) {
+        isToday = std.date === todayStr;
+      }
 
       const updateData = {
         date: todayStr,
+        room: std.room,
+        studentId: std.studentId,
+        studentName: std.studentName,
         timestamp: new Date().toISOString()
       };
 
@@ -517,24 +572,18 @@
         else updateData.status2_desc = descVal;
       }
 
-      await setDoc(doc(db, "general_study_attendance", docId), updateData, { merge: true });
+      await setDoc(doc(db, "general_study_attendance", targetDocId), updateData, { merge: true });
     };
 
-    // 수동 명단 추가 (명단 보존을 위해 docId에서 날짜 제거)
     window.addManualStudent = async function() {
       const clsNum = document.getElementById('add-class').value;
       const stdNum = document.getElementById('add-num').value.trim();
       const stdName = document.getElementById('add-name').value.trim();
 
-      if (!stdNum || !stdName) {
-        alert("번호와 이름을 모두 입력해주세요.");
-        return;
-      }
+      if (!stdNum || !stdName) return alert("번호와 이름을 모두 입력해주세요.");
 
       const paddedNum = stdNum.length === 1 ? '0' + stdNum : stdNum;
       const generatedId = `20${clsNum}${paddedNum}`;
-
-      // 날짜가 바뀌어도 명단이 사라지지 않도록 고정된 docId(nita_학번) 생성
       const docId = `nita_${generatedId}`;
 
       try {
@@ -543,18 +592,15 @@
           room: currentRoom,
           studentId: generatedId,
           studentName: stdName,
-          status1: "정상",
-          status1_desc: "",
-          status2: "정상",
-          status2_desc: "",
+          status1: "정상", status1_desc: "",
+          status2: "정상", status2_desc: "",
           timestamp: new Date().toISOString()
         });
 
         document.getElementById('add-num').value = '';
         document.getElementById('add-name').value = '';
-        document.getElementById('add-num').focus(); // 다시 번호 입력창으로 포커스
+        document.getElementById('add-num').focus(); 
       } catch (e) {
-        console.error(e);
         alert("추가 중 오류가 발생했습니다.");
       }
     };
@@ -565,20 +611,11 @@
       }
     };
     
-    // 1. 번호 입력 후 엔터 누르면 이름 입력창으로 이동
     document.getElementById('add-num').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault(); 
-        document.getElementById('add-name').focus();
-      }
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('add-name').focus(); }
     });
-
-    // 2. 이름 입력 후 엔터 누르면 명단 추가 함수 실행
     document.getElementById('add-name').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault(); 
-        window.addManualStudent(); 
-      }
+      if (e.key === 'Enter') { e.preventDefault(); window.addManualStudent(); }
     });
 
     window.startListening();
