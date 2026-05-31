@@ -79,9 +79,31 @@
     // ★ 반드시 본인의 API 주소로 변경하세요!
     const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
 
-    const roleNames = { 1: "재학생", 42: "전교 회장", 45: "선생님", 46: "관리자" };
+    const roleNames = {
+      1: "재학생",
+      2: "1-1. 반장", 3: "1-1. 부반장", 4: "1-2. 반장", 5: "1-2. 부반장", 
+      6: "1-3. 반장", 7: "1-3. 부반장", 8: "1-4. 반장", 9: "1-4. 부반장", 
+      10: "1-5. 반장", 11: "1-5. 부반장",
+      12: "2-1. 반장", 13: "2-1. 부반장", 14: "2-2. 반장", 15: "2-2. 부반장", 
+      16: "2-3. 반장", 17: "2-3. 부반장", 18: "2-4. 반장", 19: "2-4. 부반장", 
+      20: "2-5. 반장", 21: "2-5. 부반장",
+      22: "3-1. 반장", 23: "3-1. 부반장", 24: "3-2. 반장", 25: "3-2. 부반장", 
+      26: "3-3. 반장", 27: "3-3. 부반장", 28: "3-4. 반장", 29: "3-4. 부반장", 
+      30: "3-5. 반장", 31: "3-5. 부반장",
+      32: "콘텐츠소통부 부장", 33: "콘텐츠소통부",
+      34: "문화소통부 부장", 35: "문화소통부",
+      36: "건강활동부 부장", 37: "건강활동부",
+      38: "학술문예부 부장", 39: "학술문예부",
+      40: "생활안전부 부장", 41: "생활안전부",
+      42: "전교 회장", 43: "전교 부회장", 44: "전교 부회장(2)",
+      45: "선생님", 46: "관리자"
+    };
+    
     let currentRole = 0;
     const orgAdmins = [45, 46]; // 조직도 수정/삭제 권한
+    
+    const userId = sessionStorage.getItem('userId') || '';
+    const userName = sessionStorage.getItem('userName') || '';
 
     function initPage() {
       currentRole = Number(sessionStorage.getItem('userRole')) || 0; 
@@ -91,27 +113,65 @@
       const menuContainer = document.getElementById('menu-list-container');
       const actionBtn = document.getElementById('action-btn');
 
-      // 사이드바 설정 (생략: 기존 코드와 동일)
+      // 사이드바 설정 (비회원)
       if (currentRole === 0) {
         displayId.innerText = "로그인이 필요합니다.";
+        displayId.style.fontSize = "16px";
         roleDisplay.innerText = "비회원";
         roleDisplay.style.backgroundColor = "#A0AEC0";
+        
         menuContainer.innerHTML = `
           <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+          <div class="menu-item" onclick="goToPage('info')">공지사항</div>
           <div class="menu-item" onclick="goToPage('scint')" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">학생회 조직도</div>
+          <div class="menu-item" onclick="goToPage('splgin')">체육대회 페이지</div>
+          <div style="padding: 30px 20px; text-align: center; color: #A0AEC0; font-size: 13px; line-height: 1.5;">더 많은 기능을<br>이용하시려면 로그인해주세요.</div>
         `;
-        actionBtn.innerText = "로그인 하러가기";
+        
+        actionBtn.innerText = "로그인";
         actionBtn.style.backgroundColor = "#7BA4DB";
         actionBtn.onclick = function() { window.location.href = 'loginh.html'; };
-      } else {
-        displayId.innerText = sessionStorage.getItem('userId');
+      } 
+      // 사이드바 설정 (회원)
+      else {
+        displayId.innerText = userId + (userName ? ` (${userName})` : "");
         roleDisplay.innerText = roleNames[currentRole] || "권한 미상";
-        roleDisplay.style.backgroundColor = "#82CA9D"; 
-        menuContainer.innerHTML = `
+
+        if (currentRole === 1) roleDisplay.style.backgroundColor = "#82CA9D"; 
+        else if (currentRole >= 2 && currentRole <= 31) roleDisplay.style.backgroundColor = "#F6AD55"; 
+        else if (currentRole >= 32 && currentRole <= 41) roleDisplay.style.backgroundColor = "#B794F4"; 
+        else if (currentRole >= 42 && currentRole <= 44) roleDisplay.style.backgroundColor = "#F687B3"; 
+        else if (currentRole >= 45 && currentRole <= 46) roleDisplay.style.backgroundColor = "#F19C99"; 
+
+        let menuHtml = `
           <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
+          <div class="menu-item" onclick="goToPage('info')">공지사항</div>
           <div class="menu-item" onclick="goToPage('scint')" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">학생회 조직도</div>
-          <div class="menu-item" onclick="goToPage('fage1')">Fage1 메뉴로 이동</div>
+          <div class="menu-item" onclick="toggleSubMenu('mett')">2학년부 야자 프로그램(이음의 '도약') ▼</div>
+          <div id="mett" class="sub-menu">
+            <div class="menu-item" onclick="goToPage('metl')">- 멘토멘티, 홈베이스 신청</div>
+            <div class="menu-item" onclick="goToPage('metta')">- 신청 명단</div>
+            <div class="menu-item" onclick="goToPage('mett')">- 신청 명단(선생님용)</div>
+            <div class="menu-item" onclick="goToPage('nisi')">- 야자 특수 목적반 신청(반장)</div>
+            <div class="menu-item" onclick="goToPage('nita')">- 명단관리(선생님용)</div>
+          </div>
+          <div class="menu-item" onclick="goToPage('splgin')">체육대회 페이지</div>
+          <div class="menu-item" onclick="toggleSubMenu('studentCouncilMenu')">학생회 ▼</div>
+          <div id="studentCouncilMenu" class="sub-menu">
+            <div class="menu-item" onclick="checkPinAndGo('sp1')">- 회장단</div>
+            <div class="menu-item" onclick="goToPage('A2')">- 카테고리 2</div>
+            <div class="menu-item" onclick="goToPage('A3')">- 카테고리 3</div>
+          </div>
         `;
+
+        if (currentRole === 46) {
+          menuHtml += `
+            <div class="menu-item" onclick="goToPage('user_management')" style="color: #E53E3E; border-top: 1px solid #EAF0F6; margin-top: 10px;">계정 관리</div>
+          `;
+        }
+
+        menuContainer.innerHTML = menuHtml;
+
         actionBtn.innerText = "로그아웃";
         actionBtn.style.backgroundColor = "#F19C99";
         actionBtn.onclick = logout;
@@ -204,6 +264,19 @@
       const subMenu = document.getElementById(id);
       if (subMenu) {
         subMenu.classList.toggle('show');
+      }
+    }
+    
+    function checkPinAndGo(pageName) {
+      const pins = { 'sp1': '1234', 'A2': '5678' };
+      const correctPin = pins[pageName];
+      
+      if (correctPin) {
+        const userInput = prompt("접근 권한이 필요합니다.\n인증번호를 입력해주세요:");
+        if (userInput === correctPin) goToPage(pageName);
+        else if (userInput !== null) alert("인증번호가 일치하지 않습니다.");
+      } else {
+        goToPage(pageName);
       }
     }
 
