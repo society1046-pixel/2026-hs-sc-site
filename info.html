@@ -23,10 +23,12 @@
     .menu-item:hover { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; }
     .action-btn { margin: 20px; padding: 12px 20px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); transition: 0.2s; }
     
-    /* 서브메뉴(토글) CSS */
-    .sub-menu { display: none; background-color: #FAFCFF; }
+    /* 드롭다운 하위 메뉴 스타일 (이전과 동일하게 변경) */
+    .sub-menu { display: none; background-color: #FAFCFF; padding-left: 15px; border-left: 4px solid transparent; }
     .sub-menu.show { display: block; }
-    .sub-menu .menu-item { padding-left: 40px; font-size: 14px; color: #8BAFDE; }
+    .sub-menu .menu-item { font-size: 14px; padding: 10px 25px; color: #4A5568; }
+    .sub-menu .menu-item:hover { color: #7BA4DB; font-weight: bold; background-color: transparent; }
+    .version-info { text-align: center; font-size: 12px; color: #A0AEC0; margin-bottom: 30px; font-family: monospace; }
 
     /* 본문 컨테이너 */
     .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
@@ -119,6 +121,10 @@
     <div id="notice-list"></div>
   </div>
 
+  <div class="version-info">
+    Ver. beta 1.0.8
+  </div>
+
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwEIBKkR6Wt4hq0-6kzD8Wjhwm_GmZ-6shbYdpIxt3F6R-Zi-DplK3CaFoEZGPj2F4hzg/exec"; 
 
@@ -161,7 +167,7 @@
         roleDisplay.style.backgroundColor = "#A0AEC0";
         menuContainer.innerHTML = `
           <div class="menu-item" onclick="goToPage('main')">메인 화면으로</div>
-          <div class="menu-item" onclick="goToPage('info')">공지사항</div>
+          <div class="menu-item" onclick="goToPage('info')" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">공지사항</div>
           <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
         `;
         actionBtn.innerText = "로그인 하러가기";
@@ -179,7 +185,7 @@
 
         menuContainer.innerHTML = `
           <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
-          <div class="menu-item" onclick="goToPage('info')">공지사항</div>
+          <div class="menu-item" onclick="goToPage('info')" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">공지사항</div>
           <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
           <div class="menu-item" onclick="toggleSubMenu('mett')">2학년부 멘토멘티(이음의 '도약') ▼</div>
           <div id="mett" class="sub-menu">
