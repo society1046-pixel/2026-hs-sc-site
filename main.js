@@ -70,7 +70,7 @@ function initMain() {
       <div class="menu-item" onclick="goToPage('main')">메인 화면</div>
       <div class="menu-item" onclick="goToPage('info')">공지사항</div>
       <div class="menu-item" onclick="goToPage('scint')">학생회 소개</div>
-      <div class="menu-item" onclick="toggleSubMenu('mett')">2학년부 야자 프로그램(이음의 '도약') ▼</div>
+      <div class="menu-item" onclick="toggleSubMenu('mett')">2학년부 야자 프로그램 ▼</div>
       <div id="mett" class="sub-menu">
         <div class="menu-item" onclick="goToPage('metl')">- 멘토멘티, 홈베이스 신청</div>
         <div class="menu-item" onclick="goToPage('metta')">- 신청 명단</div>
@@ -79,6 +79,7 @@ function initMain() {
         <div class="menu-item" onclick="goToPage('nita')">- 명단관리(선생님용)</div>
       </div>
       <div class="menu-item" onclick="goToPage('splgin')"> 체육대회 페이지</div>
+      <div class="menu-item" onclick="goToPage('hmdoc')"> 학술문예부 - 탐구 아카이브</div>
       <div class="menu-item" onclick="toggleSubMenu('studentCouncilMenu')">학생회 ▼</div>
       <div id="studentCouncilMenu" class="sub-menu">
         <div class="menu-item" onclick="checkPinAndGo('sp1')">- 회장단</div>
