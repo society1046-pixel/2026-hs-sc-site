@@ -269,7 +269,7 @@
     </div>
   </div>
 
-  <div class="version-info">Ver. hmdoc.1.0.5 (Cloudinary Error & Viewer Fixed)</div>
+  <div class="version-info">Ver. hmdoc.1.0.6 (URL Purifier & Settings Notice)</div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
@@ -440,7 +440,7 @@
         listContainer.innerHTML = `<div class="notice-card" style="text-align:center; color:#A0AEC0; padding:40px 20px;">등록된 게시글이 없습니다.</div>`;
       }
       renderPagination(totalPages);
-    };
+    }
 
     function renderPagination(totalPages) {
       const nav = document.getElementById('pagination-nav');
@@ -530,7 +530,7 @@
       }
     };
 
-    // 🚀 완전히 새롭게 교체된 미리보기 & 다운로드 로직
+    // 🚀 데이터베이스에 오염된 URL이 있다면 자동으로 필터링 및 복구
     window.openModal = async function(docId) {
       window.activeDocId = docId;
       document.getElementById('loading-msg').style.display = 'block';
@@ -560,16 +560,19 @@
         if (item.pdfUrl && item.pdfUrl.trim() !== "") {
           pdfSection.style.display = "block";
           
-          // 💡 해결 1: 외부 뷰어(Google, Mozilla)에서 발생하는 보안/CORS 차단 문제를 원천 방지하기 위해 
-          // 브라우저에 내장된 순정 기본 PDF 리더기를 직접 호출합니다. 
-          document.getElementById('modal-pdf-frame').src = item.pdfUrl;
+          // 💡 이전 버그 수정 과정에서 데이터베이스에 잘못 입력되었을 수 있는 'fl_attachment' 글자를 자동 삭제합니다.
+          // Cloudinary에서 요구하는 가장 순수하고 안전한 형태의 원본 링크(secure_url)로 복구합니다.
+          let safeUrl = item.pdfUrl;
+          if (safeUrl.includes('/upload/fl_attachment/')) {
+            safeUrl = safeUrl.replace('/upload/fl_attachment/', '/upload/');
+          }
+
+          document.getElementById('modal-pdf-frame').src = safeUrl;
           
-          // 💡 해결 2: Cloudinary 401 Unauthorized 에러의 원인이었던 fl_attachment(강제 변환) 파라미터를 제거하고
-          // 원본 URL을 새 창에서 안전하게 열어 브라우저 자체 기능으로 다운로드할 수 있게 조치했습니다.
           const downloadBtn = document.getElementById('modal-download-btn');
-          downloadBtn.href = item.pdfUrl; 
-          downloadBtn.setAttribute('target', '_blank'); // 새 탭에서 열기
-          downloadBtn.removeAttribute('download'); // CORS 방지를 위해 브라우저 단독 다운로드 속성 제거
+          downloadBtn.href = safeUrl; 
+          downloadBtn.setAttribute('target', '_blank'); 
+          downloadBtn.removeAttribute('download');
           
         } else {
           pdfSection.style.display = "none";
