@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>형석고등학교 학생회 - 학술 보고서 게시판</title>
+  <title>형석고등학교 학생회 - 형석 탐구 아카이브</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     /* 공통 베이스 스타일 및 네비게이션/사이드바 */
@@ -153,7 +153,7 @@
     </div>
 
     <div class="board-header-card">
-      <h3>학술 보고서 게시판</h3>
+      <h3>형석 탐구 아카이브</h3>
       <div class="header-btns">
         <button id="btn-show-write" class="btn-primary" onclick="toggleWriteForm()">게시하기</button>
       </div>
@@ -162,8 +162,8 @@
     <div id="loading-msg">데이터를 처리하는 중입니다...</div>
 
     <div id="write-form">
-      <div class="write-form-title">연구 보고서 등록</div>
-      <span class="input-label">작성자 권한</span>
+      <div class="write-form-title">게시글 등록</div>
+      <span class="input-label">작성자</span>
       <div id="display-author" class="author-badge"></div>
       
       <label class="checkbox-container">
@@ -172,7 +172,7 @@
 
       <div class="input-row">
         <div class="input-field-group">
-          <label class="input-label" for="doc-title">보고서 제목</label>
+          <label class="input-label" for="doc-title">제목</label>
           <input type="text" id="doc-title" class="input-box" placeholder="연구 주제 및 제목을 입력하세요">
         </div>
       </div>
@@ -212,10 +212,10 @@
         </div>
       </div>
 
-      <label class="input-label" for="doc-pdf">PDF 보고서 파일 첨부 (선택사항)</label>
+      <label class="input-label" for="doc-pdf">PDF 보고서 파일 첨부(*반드시 PDF형식의 파일만 입력가능*)</label>
       <input type="file" id="doc-pdf" class="input-box" accept=".pdf">
 
-      <label class="input-label" for="doc-content">소개글 및 요약</label>
+      <label class="input-label" for="doc-content">게시글 본문</label>
       <textarea id="doc-content" class="input-box" placeholder="보고서에 대한 간단한 초록 또는 소개글을 적어주세요."></textarea>
       
       <div class="form-actions">
@@ -231,20 +231,20 @@
   <div id="detail-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 id="modal-title" style="margin:0; color:#2D3748;">보고서 제목</h3>
+        <h3 id="modal-title" style="margin:0; color:#2D3748;">제목</h3>
         <button class="close-btn" style="position:static; font-size:24px;" onclick="closeModal()">×</button>
       </div>
       <div class="modal-body">
         <div class="notice-meta" id="modal-meta" style="border-bottom: 1px solid #EAF0F6; padding-bottom:12px;"></div>
         <div style="margin: 15px 0; font-size:14px; color:#4A5568; background:#FAFCFF; padding:15px; border-radius:8px; border:1px solid #EAF0F6;">
           <b style="color:#7BA4DB;">[탐구 주제]</b> <span id="modal-topic"></span><br>
-          <b style="color:#7BA4DB; margin-top:5px; display:inline-block;">[소개글 및 요약]</b><br>
+          <b style="color:#7BA4DB; margin-top:5px; display:inline-block;">[본문 내용]</b><br>
           <p id="modal-desc" style="margin:5px 0 0 0; white-space:pre-wrap; line-height:1.6;"></p>
         </div>
         
         <div id="modal-pdf-section">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="input-label" style="margin:0;">📄 첨부 보고서 미리보기</span>
+            <span class="input-label" style="margin:0;">첨부 보고서 미리보기</span>
             <a id="modal-download-btn" class="btn-primary" style="text-decoration:none; font-size:12px; padding:6px 12px;" href="#" target="_blank">다운로드/원본 열기</a>
           </div>
           <iframe id="modal-pdf-frame" class="pdf-viewer" src=""></iframe>
@@ -269,7 +269,7 @@
     </div>
   </div>
 
-  <div class="version-info">Ver. hmdoc.1.0.6 (URL Purifier & Settings Notice)</div>
+  <div class="version-info">Ver. open beta 1.1.0</div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
