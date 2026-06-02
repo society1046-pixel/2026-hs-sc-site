@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>형석고등학교 학생회 - 학술 보고서 게시판</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* 공통 베이스 스타일 및 네비게이션/사이드바 */
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #F4F7FB; margin: 0; padding: 0; color: #4A5568; }
+    .navbar { background-color: #7BA4DB; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .menu-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; padding: 0; }
+    .nav-center { display: flex; align-items: center; justify-content: center; }
+    .nav-logo { height: 35px; width: 35px; background-color: white; border-radius: 50%; margin-right: 10px; object-fit: contain; padding: 2px; }
+    .nav-title { font-size: 20px; font-weight: bold; margin: 0; }
+    
+    .sidebar { height: 100%; width: 280px; position: fixed; top: 0; left: -280px; background-color: white; box-shadow: 4px 0 15px rgba(0,0,0,0.05); transition: 0.3s; z-index: 1000; overflow-x: hidden; display: flex; flex-direction: column; }
+    .sidebar-header { background-color: #FAFCFF; padding: 30px 20px 20px; border-bottom: 1px solid #EAF0F6; position: relative; }
+    .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; border: none; background: none; color: #A0AEC0; }
+    .user-id-text { font-size: 20px; font-weight: bold; color: #2D3748; margin: 0 0 8px 0; }
+    .user-role-badge { display: inline-block; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: bold; }
+    .menu-list { padding: 10px 0; flex-grow: 1; }
+    .menu-item { padding: 15px 25px; display: block; color: #7BA4DB; font-weight: bold; text-decoration: none; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; }
+    .menu-item:hover { background-color: #F4F7FB; border-left: 4px solid #7BA4DB; }
+    .action-btn { margin: 20px; padding: 12px 20px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); transition: 0.2s; }
+    
+    .version-info { text-align: center; font-size: 12px; color: #A0AEC0; margin-bottom: 30px; font-family: monospace; }
+
+    /* 본문 컨테이너 */
+    .container { max-width: 900px; margin: 20px auto; padding: 0 15px; }
+
+    /* 버튼 스타일 */
+    .btn-primary { background-color: #7BA4DB; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
+    .btn-primary:hover { background-color: #618DC7; }
+    .btn-secondary { background-color: #EAF0F6; color: #4A5568; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
+    .btn-secondary:hover { background-color: #DCE4EC; }
+    .btn-danger { background-color: #FC8181; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 12px; }
+    .btn-danger:hover { background-color: #E53E3E; }
+
+    /* 카테고리 탭 스타일 */
+    .category-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .category-btn { padding: 8px 14px; border-radius: 20px; border: 1px solid #7BA4DB; background: white; color: #7BA4DB; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 13px; }
+    .category-btn.active { background: #7BA4DB; color: white; }
+
+    /* 검색 영역 */
+    .search-card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .search-select { padding: 10px; border: 1px solid #DCE4EC; border-radius: 8px; color: #4A5568; font-size: 14px; background: white; }
+    .search-input { flex-grow: 1; padding: 10px; border: 1px solid #DCE4EC; border-radius: 8px; font-size: 14px; min-width: 150px; }
+
+    /* 게시판 헤더 */
+    .board-header-card { background: white; padding: 20px 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .board-header-card h3 { margin: 0; color: #2D3748; font-size: 20px; }
+    .header-btns { display: flex; gap: 8px; }
+
+    /* 글쓰기 폼 영역 */
+    #write-form { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid #EAF0F6; display: none; margin-bottom: 25px; }
+    .write-form-title { font-size: 16px; font-weight: bold; color: #2D3748; margin-bottom: 15px; border-bottom: 2px solid #F4F7FB; padding-bottom: 10px; }
+    .input-row { display: flex; gap: 15px; flex-wrap: wrap; }
+    .input-field-group { flex: 1; min-width: 200px; }
+    .input-label { display: block; font-size: 13px; font-weight: bold; color: #718096; margin-bottom: 6px; }
+    .input-box { width: 100%; padding: 12px; border: 1px solid #DCE4EC; border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 14px; margin-bottom: 15px; transition: 0.2s; color: #2D3748; }
+    .input-box:focus { border-color: #7BA4DB; outline: none; }
+    textarea.input-box { resize: vertical; min-height: 100px; }
+    .author-badge { color: #7BA4DB; font-weight: bold; background: #FAFCFF; padding: 4px 10px; border-radius: 6px; border: 1px solid #EAF0F6; display: inline-block; margin-bottom: 15px; font-size: 14px; }
+    .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+    .checkbox-container { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: bold; color: #4A5568; margin-bottom: 15px; cursor: pointer; }
+
+    /* 보고서 카드 스타일 */
+    .notice-card { background: white; padding: 22px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #EAF0F6; margin-bottom: 15px; transition: 0.2s; cursor: pointer; }
+    .notice-card:hover { box-shadow: 0 4px 15px rgba(123, 164, 219, 0.15); border-color: #7BA4DB; }
+    .notice-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .notice-title { font-size: 18px; font-weight: bold; color: #2D3748; margin: 0; }
+    .notice-meta { font-size: 13px; color: #A0AEC0; margin-bottom: 12px; border-bottom: 1px dashed #EAF0F6; padding-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
+    .notice-meta b { color: #4A5568; }
+    .field-tag { background-color: #EBF8FF; color: #2B6CB0; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+    .notice-content { font-size: 14px; line-height: 1.5; color: #718096; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 13px; color: #A0AEC0; }
+    .like-count { display: flex; align-items: center; gap: 4px; color: #E53E3E; font-weight: bold; }
+
+    /* 페이징 */
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin: 25px 0; font-weight: bold; }
+    
+    /* 모달 팝업 스타일 */
+    .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
+    .modal-content { background: white; border-radius: 16px; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; box-shadow: 0 5px 25px rgba(0,0,0,0.15); animation: fadeIn 0.2s ease-out; }
+    .modal-header { padding: 20px; border-bottom: 1px solid #EAF0F6; display: flex; justify-content: space-between; align-items: center; background: #FAFCFF; border-top-left-radius: 16px; border-top-right-radius: 16px; }
+    .modal-body { padding: 20px; }
+    .pdf-viewer { width: 100%; height: 450px; border: 1px solid #DCE4EC; border-radius: 8px; margin: 15px 0; background: #F4F7FB; }
+    
+    /* 댓글 컴포넌트 */
+    .comment-section { margin-top: 25px; border-top: 2px solid #EAF0F6; padding-top: 20px; }
+    .comment-title { font-size: 16px; font-weight: bold; color: #2D3748; margin-bottom: 15px; }
+    .comment-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px; }
+    .comment-item { background: #FAFCFF; border: 1px solid #EAF0F6; padding: 12px; border-radius: 8px; }
+    .comment-meta { display: flex; justify-content: space-between; font-size: 12px; color: #A0AEC0; margin-bottom: 6px; font-weight: bold; }
+    .comment-meta b { color: #4A5568; }
+    .comment-body { font-size: 14px; color: #2D3748; }
+    .comment-form { display: flex; gap: 8px; }
+    .comment-input { flex-grow: 1; padding: 10px; border: 1px solid #DCE4EC; border-radius: 8px; font-size: 14px; }
+
+    #loading-msg { text-align: center; color: #7BA4DB; font-weight: bold; margin: 30px 0; display: none; }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 600px) {
+      .board-header-card { flex-direction: column; align-items: flex-start; gap: 15px; }
+      .header-btns { width: 100%; display: flex; justify-content: flex-end; }
+      .input-row { flex-direction: column; gap: 0; }
+      .pdf-viewer { height: 300px; }
+    }
+  </style>
+</head>
+<body> 
+  <div class="navbar">
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+    <div class="nav-center">
+      <img src="https://drive.google.com/thumbnail?id=1-vFaLyktqvl_ywa0BpiBppSI6lEgsKDd&sz=w200" alt="로고" class="nav-logo">
+      <p class="nav-title">형석고등학교 학생회</p>
+    </div>
+    <div style="width: 24px;"></div> 
+  </div>
+
+  <div id="mySidebar" class="sidebar">
+    <div class="sidebar-header">
+      <button class="close-btn" onclick="toggleMenu()">×</button>
+      <h3 class="user-id-text" id="display-id">로그인이 필요합니다.</h3>
+      <span class="user-role-badge" id="display-role" style="background-color: #A0AEC0;">비회원</span>
+    </div>
+    <div class="menu-list" id="menu-list-container"></div>
+    <button id="action-btn" class="action-btn">로그인 하러가기</button>
+  </div>
+
+  <div class="container">
+    <div class="category-container" id="category-tabs">
+      <button class="category-btn active" onclick="changeCategory('전체')">전체</button>
+      <button class="category-btn" onclick="changeCategory('물리-지구과학')">물리-지구과학</button>
+      <button class="category-btn" onclick="changeCategory('화학-생명과학')">화학-생명과학</button>
+      <button class="category-btn" onclick="changeCategory('수학')">수학</button>
+      <button class="category-btn" onclick="changeCategory('사회')">사회</button>
+      <button class="category-btn" onclick="changeCategory('인문-문학')">인문-문학</button>
+      <button class="category-btn" onclick="changeCategory('예술-체육')">예술-체육</button>
+      <button class="category-btn" onclick="changeCategory('공학-컴퓨터')">공학-컴퓨터</button>
+      <button class="category-btn" onclick="changeCategory('기타')">기타</button>
+    </div>
+
+    <div class="search-card">
+      <select id="search-filter" class="search-select">
+        <option value="all">전체검색 (제목/과목/학년)</option>
+        <option value="title">제목</option>
+        <option value="subject">관련과목</option>
+        <option value="grade">학년</option>
+      </select>
+      <input type="text" id="search-keyword" class="search-input" placeholder="검색어를 입력하고 Enter를 누르세요..." onkeyup="if(event.key==='Enter') executeSearch()">
+      <button class="btn-primary" onclick="executeSearch()">검색</button>
+    </div>
+
+    <div class="board-header-card">
+      <h3>학술 보고서 게시판</h3>
+      <div class="header-btns">
+        <button id="btn-show-write" class="btn-primary" onclick="toggleWriteForm()">게시하기</button>
+      </div>
+    </div>
+
+    <div id="loading-msg">데이터를 처리하는 중입니다...</div>
+
+    <div id="write-form">
+      <div class="write-form-title">연구 보고서 등록</div>
+      <span class="input-label">작성자 권한</span>
+      <div id="display-author" class="author-badge"></div>
+      
+      <label class="checkbox-container">
+        <input type="checkbox" id="doc-anonymous"> 익명으로 게시하기
+      </label>
+
+      <div class="input-row">
+        <div class="input-field-group">
+          <label class="input-label" for="doc-title">보고서 제목</label>
+          <input type="text" id="doc-title" class="input-box" placeholder="연구 주제 및 제목을 입력하세요">
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="input-field-group">
+          <label class="input-label" for="doc-grade">학년</label>
+          <select id="doc-grade" class="input-box">
+            <option value="1학년">1학년</option>
+            <option value="2학년">2학년</option>
+            <option value="3학년">3학년</option>
+          </select>
+        </div>
+        <div class="input-field-group">
+          <label class="input-label" for="doc-field">진로 분야</label>
+          <select id="doc-field" class="input-box">
+            <option value="물리-지구과학">물리-지구과학</option>
+            <option value="화학-생명과학">화학-생명과학</option>
+            <option value="수학">수학</option>
+            <option value="사회">사회</option>
+            <option value="인문-문학">인문-문학</option>
+            <option value="예술-체육">예술-체육</option>
+            <option value="공학-컴퓨터">공학-컴퓨터</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="input-field-group">
+          <label class="input-label" for="doc-subject">관련 과목</label>
+          <input type="text" id="doc-subject" class="input-box" placeholder="예: 물리학Ⅰ, 생활과 윤리">
+        </div>
+        <div class="input-field-group">
+          <label class="input-label" for="doc-topic">탐구 주제</label>
+          <input type="text" id="doc-topic" class="input-box" placeholder="핵심 탐구 키워드">
+        </div>
+      </div>
+
+      <label class="input-label" for="doc-pdf">PDF 보고서 파일 첨부 (Cloudinary)</label>
+      <input type="file" id="doc-pdf" class="input-box" accept=".pdf">
+
+      <label class="input-label" for="doc-content">소개글 및 요약</label>
+      <textarea id="doc-content" class="input-box" placeholder="보고서에 대한 간단한 초록 또는 소개글을 적어주세요."></textarea>
+      
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="toggleWriteForm()">취소</button>
+        <button class="btn-primary" onclick="submitDocument()">게시하기</button>
+      </div>
+    </div>
+
+    <div id="document-list"></div>
+    <div class="pagination" id="pagination-nav"></div>
+  </div>
+
+  <div id="detail-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title" style="margin:0; color:#2D3748;">보고서 제목</h3>
+        <button class="close-btn" style="position:static; font-size:24px;" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="notice-meta" id="modal-meta" style="border-bottom: 1px solid #EAF0F6; padding-bottom:12px;"></div>
+        <div style="margin: 15px 0; font-size:14px; color:#4A5568; background:#FAFCFF; padding:15px; border-radius:8px; border:1px solid #EAF0F6;">
+          <b style="color:#7BA4DB;">[탐구 주제]</b> <span id="modal-topic"></span><br>
+          <b style="color:#7BA4DB; margin-top:5px; display:inline-block;">[소개글 및 요약]</b><br>
+          <p id="modal-desc" style="margin:5px 0 0 0; white-space:pre-wrap; line-height:1.6;"></p>
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="input-label" style="margin:0;">📄 첨부 보고서 미리보기</span>
+          <a id="modal-download-btn" class="btn-primary" style="text-decoration:none; font-size:12px; padding:6px 12px;" href="#" target="_blank" download>다운로드 받기</a>
+        </div>
+        <iframe id="modal-pdf-frame" class="pdf-viewer" src=""></iframe>
+
+        <div style="text-align: center; margin: 20px 0;">
+          <button class="btn-secondary" id="modal-like-btn" onclick="toggleLike()" style="border-radius:20px; padding:8px 20px;">
+            ❤️ 좋아요 <span id="modal-like-count">0</span>
+          </button>
+          <button class="btn-danger" id="modal-delete-btn" style="display:none; margin-left:10px; border-radius:20px; padding:8px 20px;">게시글 삭제</button>
+        </div>
+
+        <div class="comment-section">
+          <div class="comment-title">댓글 (<span id="modal-comment-count">0</span>)</div>
+          <div class="comment-list" id="modal-comment-list"></div>
+          <div class="comment-form">
+            <input type="text" id="comment-input" class="comment-input" placeholder="따뜻한 한마디 댓글을 입력하세요...">
+            <button class="btn-primary" onclick="submitComment()">등록</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="version-info">Ver. hmdoc.1.0.2 (Cloudinary Hybrid)</div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDQa2sidgWpIQyPVyTIlCcLWHscO89QZ70",
+      authDomain: "hyeongsok-student-council.firebaseapp.com",
+      databaseURL: "https://hyeongsok-student-council-default-rtdb.firebaseio.com",
+      projectId: "hyeongsok-student-council",
+      storageBucket: "hyeongsok-student-council.firebasestorage.app",
+      messagingSenderId: "405153370998",
+      appId: "1:405153370998:web:75b16c68f97fb5879aa057",
+      measurementId: "G-DSMWRD9TFS"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    let analytics;
+    try { analytics = getAnalytics(app); } catch (e) {}
+    const db = getFirestore(app);
+
+    // ✅ 사용자의 Cloud Name 주입 완료!
+    const CLOUDINARY_CLOUD_NAME = "dswystlen"; 
+    // ⚠️ 중요: Cloudinary 설정 -> Upload 메뉴 -> Upload presets에서 만든 Unsigned 프리셋 이름을 여기에 적어주세요! (예: "ml_default")
+    const CLOUDINARY_UPLOAD_PRESET = "hsscsite";
+
+    // 전역 상태 변수들
+    window.roleNames = { 1: "재학생", 45: "선생님", 46: "관리자" };
+    window.currentRole = parseInt(sessionStorage.getItem('userRole')) || 0;
+    window.userId = sessionStorage.getItem('userId') || '알수없음';
+    window.userName = sessionStorage.getItem('userName') || '익명사용자';
+    window.currentCategory = '전체';
+    window.searchFilter = 'all';
+    window.searchKeyword = '';
+    window.allDocuments = [];
+    window.currentPage = 1;
+    const itemsPerPage = 10;
+    window.activeDocId = null;
+
+    window.initPage = function() {
+      if (window.currentRole === 0) {
+        alert("로그인 권한이 필요합니다.");
+        window.location.href = 'loginh.html';
+        return;
+      }
+      const displayId = document.getElementById('display-id');
+      const roleDisplay = document.getElementById('display-role');
+      displayId.innerText = window.userId + (window.userName ? ` (${window.userName})` : "");
+      roleDisplay.innerText = window.roleNames[window.currentRole] || "학생 회원";
+      if (window.currentRole === 46) roleDisplay.style.backgroundColor = "#F19C99";
+      else roleDisplay.style.backgroundColor = "#82CA9D";
+      document.getElementById('display-author').innerText = `${window.userName} (${window.roleNames[window.currentRole] || '재학생'})`;
+      
+      document.getElementById('menu-list-container').innerHTML = `
+        <div class="menu-item" onclick="window.location.href='main.html'">메인 화면</div>
+        <div class="menu-item" onclick="window.location.href='hmdoc.html'" style="background-color: #F4F7FB; border-left: 4px solid #7BA4DB;">학술 보고서 게시판</div>
+      `;
+      const actionBtn = document.getElementById('action-btn');
+      actionBtn.innerText = "로그아웃";
+      actionBtn.style.backgroundColor = "#F19C99";
+      actionBtn.onclick = function() {
+        if(confirm('로그아웃 하시겠습니까?')) { sessionStorage.clear(); window.location.reload(); }
+      };
+      loadDocuments();
+    };
+
+    window.toggleMenu = function() {
+      const sidebar = document.getElementById("mySidebar");
+      sidebar.style.left = sidebar.style.left === "0px" ? "-280px" : "0px";
+    };
+
+    window.toggleWriteForm = function() {
+      const form = document.getElementById('write-form');
+      form.style.display = (form.style.display === 'none' || form.style.display === '') ? 'block' : 'none';
+    };
+
+    window.changeCategory = function(catName) {
+      window.currentCategory = catName;
+      const btns = document.querySelectorAll('#category-tabs .category-btn');
+      btns.forEach(btn => {
+        if(btn.innerText === catName) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+      window.currentPage = 1;
+      renderFilteredList();
+    };
+
+    window.executeSearch = function() {
+      window.searchFilter = document.getElementById('search-filter').value;
+      window.searchKeyword = document.getElementById('search-keyword').value.trim().toLowerCase();
+      window.currentPage = 1;
+      renderFilteredList();
+    };
+
+    async function loadDocuments() {
+      const msg = document.getElementById('loading-msg');
+      msg.style.display = 'block';
+      try {
+        const q = query(collection(db, "hmdocs"), orderBy("createdAt", "desc"));
+        const querySnapshot = await getDocs(q);
+        window.allDocuments = [];
+        querySnapshot.forEach((doc) => {
+          window.allDocuments.push({ id: doc.id, ...doc.data() });
+        });
+        renderFilteredList();
+      } catch (error) {
+        console.error("데이터 로딩 실패:", error);
+      } finally {
+        msg.style.display = 'none';
+      }
+    }
+
+    window.renderFilteredList = function() {
+      let filtered = [...window.allDocuments];
+      if (window.currentCategory !== '전체') {
+        filtered = filtered.filter(item => item.field === window.currentCategory);
+      }
+      if (window.searchKeyword !== '') {
+        filtered = filtered.filter(item => {
+          const titleMatch = item.title ? item.title.toLowerCase().includes(window.searchKeyword) : false;
+          const subjectMatch = item.subject ? item.subject.toLowerCase().includes(window.searchKeyword) : false;
+          const gradeMatch = item.grade ? item.grade.toLowerCase().includes(window.searchKeyword) : false;
+          if (window.searchFilter === 'all') return (titleMatch || subjectMatch || gradeMatch);
+          if (window.searchFilter === 'title') return titleMatch;
+          if (window.searchFilter === 'subject') return subjectMatch;
+          if (window.searchFilter === 'grade') return gradeMatch;
+          return true;
+        });
+      }
+
+      const totalItems = filtered.length;
+      const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+      const startIndex = (window.currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedItems = filtered.slice(startIndex, endIndex);
+
+      const listContainer = document.getElementById('document-list');
+      listContainer.innerHTML = "";
+
+      if(paginatedItems.length > 0) {
+        paginatedItems.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'notice-card';
+          card.onclick = () => openModal(item.id);
+
+          const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : '-';
+          const authorDisplay = item.isAnonymous ? "익명" : item.author;
+          const likesCount = item.likes ? Object.keys(item.likes).length : 0;
+
+          card.innerHTML = `
+            <div class="notice-header-row">
+              <div class="notice-title">${escapeHTML(item.title)}</div>
+              <span class="field-tag">${escapeHTML(item.field)}</span>
+            </div>
+            <div class="notice-meta">
+              <span>학년: <b>${escapeHTML(item.grade)}</b></span>
+              <span>과목: <b>${escapeHTML(item.subject)}</b></span>
+              <span>작성자: <b>${escapeHTML(authorDisplay)}</b></span>
+            </div>
+            <div class="notice-content">${escapeHTML(item.content)}</div>
+            <div class="card-footer">
+              <span>등록일: ${dateStr}</span>
+              <span class="like-count">❤️ ${likesCount}</span>
+            </div>
+          `;
+          listContainer.appendChild(card);
+        });
+      } else {
+        listContainer.innerHTML = `<div class="notice-card" style="text-align:center; color:#A0AEC0; padding:40px 20px;">등록된 게시글이 없습니다.</div>`;
+      }
+      renderPagination(totalPages);
+    };
+
+    function renderPagination(totalPages) {
+      const nav = document.getElementById('pagination-nav');
+      nav.innerHTML = "";
+      if(totalPages <= 1) return;
+      const prevBtn = document.createElement('button');
+      prevBtn.className = "btn-secondary";
+      prevBtn.innerText = "이전";
+      prevBtn.disabled = window.currentPage === 1;
+      prevBtn.onclick = () => { window.currentPage--; renderFilteredList(); };
+      nav.appendChild(prevBtn);
+      const infoText = document.createElement('span');
+      infoText.innerText = `${window.currentPage} / ${totalPages}`;
+      nav.appendChild(infoText);
+      const nextBtn = document.createElement('button');
+      nextBtn.className = "btn-secondary";
+      nextBtn.innerText = "다음";
+      nextBtn.disabled = window.currentPage === totalPages;
+      nextBtn.onclick = () => { window.currentPage++; renderFilteredList(); };
+      nav.appendChild(nextBtn);
+    }
+
+    window.submitDocument = async function() {
+      if(CLOUDINARY_UPLOAD_PRESET.startsWith("여기에_")) {
+        alert("코드 내에 Cloudinary Upload Preset 이름이 설정되지 않았습니다!");
+        return;
+      }
+
+      const title = document.getElementById('doc-title').value.trim();
+      const grade = document.getElementById('doc-grade').value;
+      const field = document.getElementById('doc-field').value;
+      const subject = document.getElementById('doc-subject').value.trim();
+      const topic = document.getElementById('doc-topic').value.trim();
+      const content = document.getElementById('doc-content').value.trim();
+      const isAnonymous = document.getElementById('doc-anonymous').checked;
+      const fileInput = document.getElementById('doc-pdf');
+
+      if(!title || !subject || !topic || !content) {
+        alert("모든 빈칸 정보를 성실히 입력해 주세요."); return;
+      }
+      if(fileInput.files.length === 0) {
+        alert("PDF 파일을 동봉해 주세요."); return;
+      }
+
+      const targetFile = fileInput.files[0];
+      document.getElementById('loading-msg').style.display = 'block';
+      document.getElementById('write-form').style.display = 'none';
+
+      try {
+        const formData = new FormData();
+        formData.append('file', targetFile);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        
+        const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const uploadData = await uploadResponse.json();
+        
+        if (uploadData.error) {
+          throw new Error(uploadData.error.message);
+        }
+
+        const pdfUrl = uploadData.secure_url;
+
+        const payload = {
+          title, grade, field, subject, topic, content, isAnonymous, 
+          pdfUrl: pdfUrl, 
+          author: window.userName,
+          uid: window.userId,
+          createdAt: Date.now(),
+          likes: {},
+          comments: []
+        };
+
+        await addDoc(collection(db, "hmdocs"), payload);
+        alert("게시물이 성공적으로 등록되었습니다!");
+        
+        document.getElementById('doc-title').value = "";
+        document.getElementById('doc-subject').value = "";
+        document.getElementById('doc-topic').value = "";
+        document.getElementById('doc-content').value = "";
+        fileInput.value = "";
+        
+        loadDocuments();
+      } catch (e) {
+        console.error("업로드 에러:", e);
+        alert("파일 업로드 중 오류가 발생했습니다. Upload Preset 권한을 확인해주세요.");
+        document.getElementById('write-form').style.display = 'block';
+      } finally {
+        document.getElementById('loading-msg').style.display = 'none';
+      }
+    };
+
+    window.openModal = async function(docId) {
+      window.activeDocId = docId;
+      document.getElementById('loading-msg').style.display = 'block';
+      
+      try {
+        const docSnap = await getDoc(doc(db, "hmdocs", docId));
+        if (!docSnap.exists()) { alert("지워졌거나 없는 글입니다."); return; }
+        const item = docSnap.data();
+
+        const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleString('ko-KR') : '-';
+        const authorDisplay = item.isAnonymous ? "익명" : item.author;
+        const likesCount = item.likes ? Object.keys(item.likes).length : 0;
+
+        document.getElementById('modal-title').innerText = item.title;
+        document.getElementById('modal-meta').innerHTML = `
+          <span>분야: <b>${item.field}</b></span> | 
+          <span>과목: <b>${item.subject}</b></span> | 
+          <span>학년: <b>${item.grade}</b></span> | 
+          <span>작성자: <b>${authorDisplay}</b></span> | 
+          <span>일자: ${dateStr}</span>
+        `;
+        document.getElementById('modal-topic').innerText = item.topic;
+        document.getElementById('modal-desc').innerText = item.content;
+        
+        document.getElementById('modal-pdf-frame').src = item.pdfUrl;
+        document.getElementById('modal-download-btn').href = item.pdfUrl;
+        document.getElementById('modal-like-count').innerText = likesCount;
+
+        const delBtn = document.getElementById('modal-delete-btn');
+        if (item.uid === window.userId || window.currentRole === 46) {
+          delBtn.style.display = "inline-block";
+          delBtn.onclick = () => deleteDocument(docId);
+        } else {
+          delBtn.style.display = "none";
+        }
+
+        renderComments(item.comments || []);
+        document.getElementById('detail-modal').style.display = "flex";
+      } catch(e) {
+        console.error(e);
+      } finally {
+        document.getElementById('loading-msg').style.display = 'none';
+      }
+    };
+
+    window.closeModal = function() {
+      document.getElementById('detail-modal').style.display = "none";
+      document.getElementById('modal-pdf-frame').src = ""; 
+      window.activeDocId = null;
+    };
+
+    window.toggleLike = async function() {
+      if(!window.activeDocId) return;
+      const docRef = doc(db, "hmdocs", window.activeDocId);
+      try {
+        const snap = await getDoc(docRef);
+        const data = snap.data();
+        let likes = data.likes || {};
+        if(likes[window.userId]) delete likes[window.userId]; 
+        else likes[window.userId] = true; 
+        
+        await updateDoc(docRef, { likes: likes });
+        document.getElementById('modal-like-count').innerText = Object.keys(likes).length;
+        
+        const target = window.allDocuments.find(d => d.id === window.activeDocId);
+        if(target) target.likes = likes;
+        renderFilteredList();
+      } catch(e) { console.error(e); }
+    };
+
+    function renderComments(comments) {
+      document.getElementById('modal-comment-count').innerText = comments.length;
+      const box = document.getElementById('modal-comment-list');
+      box.innerHTML = "";
+      if(comments.length === 0) {
+        box.innerHTML = `<p style="text-align:center; font-size:12px; color:#A0AEC0; margin:10px 0;">첫 감상평 댓글을 남겨보세요.</p>`;
+        return;
+      }
+      comments.forEach(c => {
+        const row = document.createElement('div');
+        row.className = "comment-item";
+        row.innerHTML = `
+          <div class="comment-meta">
+            <span><b>${escapeHTML(c.author)}</b> (${escapeHTML(c.userId)})</span>
+            <span>${c.date}</span>
+          </div>
+          <div class="comment-body">${escapeHTML(c.body)}</div>
+        `;
+        box.appendChild(row);
+      });
+    }
+
+    window.submitComment = async function() {
+      const input = document.getElementById('comment-input');
+      const text = input.value.trim();
+      if(!text) return;
+
+      const docRef = doc(db, "hmdocs", window.activeDocId);
+      try {
+        const snap = await getDoc(docRef);
+        const data = snap.data();
+        let comments = data.comments || [];
+        comments.push({
+          author: window.userName,
+          userId: window.userId,
+          body: text,
+          date: new Date().toLocaleString('ko-KR')
+        });
+        await updateDoc(docRef, { comments: comments });
+        input.value = "";
+        renderComments(comments);
+        const target = window.allDocuments.find(d => d.id === window.activeDocId);
+        if(target) target.comments = comments;
+      } catch(e) { console.error(e); }
+    };
+
+    async function deleteDocument(docId) {
+      if(!confirm("해당 게시글을 삭제하시겠습니까?\n(참고: Cloudinary 서버의 원본 파일은 유지됩니다)")) return;
+      document.getElementById('loading-msg').style.display = 'block';
+      closeModal();
+
+      try {
+        await deleteDoc(doc(db, "hmdocs", docId));
+        alert("정상 삭제되었습니다.");
+        loadDocuments();
+      } catch(e) {
+        console.error(e);
+        alert("삭제 중 예기치 않은 오류가 발생했습니다.");
+      } finally {
+        document.getElementById('loading-msg').style.display = 'none';
+      }
+    }
+
+    function escapeHTML(str) {
+      if (!str) return "";
+      return String(str).replace(/[&<>'"]/g, tag => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[tag]));
+    }
+    
+    document.addEventListener("DOMContentLoaded", window.initPage);
+  </script>
+</body>
+</html>
