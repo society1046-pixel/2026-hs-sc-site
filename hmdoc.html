@@ -245,7 +245,7 @@
         <div id="modal-pdf-section">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <span class="input-label" style="margin:0;">📄 첨부 보고서 미리보기</span>
-            <a id="modal-download-btn" class="btn-primary" style="text-decoration:none; font-size:12px; padding:6px 12px;" href="#" target="_blank">다운로드 받기</a>
+            <a id="modal-download-btn" class="btn-primary" style="text-decoration:none; font-size:12px; padding:6px 12px;" href="#" target="_blank">다운로드/원본 열기</a>
           </div>
           <iframe id="modal-pdf-frame" class="pdf-viewer" src=""></iframe>
         </div>
@@ -269,7 +269,7 @@
     </div>
   </div>
 
-  <div class="version-info">Ver. hmdoc.1.0.4 (Cloudinary PDF Fixed)</div>
+  <div class="version-info">Ver. hmdoc.1.0.5 (Cloudinary Error & Viewer Fixed)</div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
@@ -530,7 +530,7 @@
       }
     };
 
-    // 🚀 구글 문서 뷰어 에러 원천 차단 + 완벽한 다운로드 링크 생성
+    // 🚀 완전히 새롭게 교체된 미리보기 & 다운로드 로직
     window.openModal = async function(docId) {
       window.activeDocId = docId;
       document.getElementById('loading-msg').style.display = 'block';
@@ -560,17 +560,16 @@
         if (item.pdfUrl && item.pdfUrl.trim() !== "") {
           pdfSection.style.display = "block";
           
-          // 💡 해결 1. 구글 뷰어 대신 Mozilla에서 공식 제공하는 안정적인 웹 PDF 리더기(PDF.js) 사용
-          document.getElementById('modal-pdf-frame').src = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(item.pdfUrl)}`;
+          // 💡 해결 1: 외부 뷰어(Google, Mozilla)에서 발생하는 보안/CORS 차단 문제를 원천 방지하기 위해 
+          // 브라우저에 내장된 순정 기본 PDF 리더기를 직접 호출합니다. 
+          document.getElementById('modal-pdf-frame').src = item.pdfUrl;
           
-          // 💡 해결 2. Cloudinary 전용 '강제 다운로드' 파라미터(fl_attachment)를 URL 중간에 삽입하여 무조건 다운로드되게 조치
-          let downloadLink = item.pdfUrl;
-          if (downloadLink.includes('/upload/')) {
-            downloadLink = downloadLink.replace('/upload/', '/upload/fl_attachment/');
-          }
+          // 💡 해결 2: Cloudinary 401 Unauthorized 에러의 원인이었던 fl_attachment(강제 변환) 파라미터를 제거하고
+          // 원본 URL을 새 창에서 안전하게 열어 브라우저 자체 기능으로 다운로드할 수 있게 조치했습니다.
           const downloadBtn = document.getElementById('modal-download-btn');
-          downloadBtn.href = downloadLink;
-          downloadBtn.removeAttribute('download'); // 브라우저 보안 이슈를 막기 위해 download 속성은 뺌
+          downloadBtn.href = item.pdfUrl; 
+          downloadBtn.setAttribute('target', '_blank'); // 새 탭에서 열기
+          downloadBtn.removeAttribute('download'); // CORS 방지를 위해 브라우저 단독 다운로드 속성 제거
           
         } else {
           pdfSection.style.display = "none";
