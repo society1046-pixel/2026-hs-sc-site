@@ -212,7 +212,7 @@
         </div>
       </div>
 
-      <label class="input-label" for="doc-pdf">PDF 보고서 파일 첨부 (Cloudinary)</label>
+      <label class="input-label" for="doc-pdf">PDF 보고서 파일 첨부 (선택사항)</label>
       <input type="file" id="doc-pdf" class="input-box" accept=".pdf">
 
       <label class="input-label" for="doc-content">소개글 및 요약</label>
@@ -242,11 +242,13 @@
           <p id="modal-desc" style="margin:5px 0 0 0; white-space:pre-wrap; line-height:1.6;"></p>
         </div>
         
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span class="input-label" style="margin:0;">📄 첨부 보고서 미리보기</span>
-          <a id="modal-download-btn" class="btn-primary" style="text-decoration:none; font-size:12px; padding:6px 12px;" href="#" target="_blank" download>다운로드 받기</a>
+        <div id="modal-pdf-section">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="input-label" style="margin:0;">📄 첨부 보고서 미리보기</span>
+            <a id="modal-download-btn" class="btn-primary" style="text-decoration:none; font-size:12px; padding:6px 12px;" href="#" target="_blank" download>다운로드 받기</a>
+          </div>
+          <iframe id="modal-pdf-frame" class="pdf-viewer" src=""></iframe>
         </div>
-        <iframe id="modal-pdf-frame" class="pdf-viewer" src=""></iframe>
 
         <div style="text-align: center; margin: 20px 0;">
           <button class="btn-secondary" id="modal-like-btn" onclick="toggleLike()" style="border-radius:20px; padding:8px 20px;">
@@ -267,7 +269,7 @@
     </div>
   </div>
 
-  <div class="version-info">Ver. hmdoc.1.0.2 (Cloudinary Hybrid)</div>
+  <div class="version-info">Ver. hmdoc.1.0.3 (Cloudinary Hybrid Optimized)</div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
@@ -290,9 +292,8 @@
     try { analytics = getAnalytics(app); } catch (e) {}
     const db = getFirestore(app);
 
-    // ✅ 사용자의 Cloud Name 주입 완료!
+    // ✅ 사용자의 Cloud Name 및 새 Upload Preset 적용 완수!
     const CLOUDINARY_CLOUD_NAME = "dswystlen"; 
-    // ⚠️ 중요: Cloudinary 설정 -> Upload 메뉴 -> Upload presets에서 만든 Unsigned 프리셋 이름을 여기에 적어주세요! (예: "ml_default")
     const CLOUDINARY_UPLOAD_PRESET = "hsscsite";
 
     // 전역 상태 변수들
@@ -463,12 +464,8 @@
       nav.appendChild(nextBtn);
     }
 
+    // 🚀 파일을 동봉하지 않아도 게시글 저장이 가능하도록 수정 완료
     window.submitDocument = async function() {
-      if(CLOUDINARY_UPLOAD_PRESET.startsWith("여기에_")) {
-        alert("코드 내에 Cloudinary Upload Preset 이름이 설정되지 않았습니다!");
-        return;
-      }
-
       const title = document.getElementById('doc-title').value.trim();
       const grade = document.getElementById('doc-grade').value;
       const field = document.getElementById('doc-field').value;
@@ -481,31 +478,31 @@
       if(!title || !subject || !topic || !content) {
         alert("모든 빈칸 정보를 성실히 입력해 주세요."); return;
       }
-      if(fileInput.files.length === 0) {
-        alert("PDF 파일을 동봉해 주세요."); return;
-      }
 
-      const targetFile = fileInput.files[0];
       document.getElementById('loading-msg').style.display = 'block';
       document.getElementById('write-form').style.display = 'none';
 
       try {
-        const formData = new FormData();
-        formData.append('file', targetFile);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-        
-        const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`, {
-          method: 'POST',
-          body: formData
-        });
-        
-        const uploadData = await uploadResponse.json();
-        
-        if (uploadData.error) {
-          throw new Error(uploadData.error.message);
-        }
+        let pdfUrl = ""; // 기본값은 빈 문자열
 
-        const pdfUrl = uploadData.secure_url;
+        // 📎 사용자가 파일을 선택했을 때만 Cloudinary 업로드 분기 처리 진행
+        if (fileInput.files.length > 0) {
+          const targetFile = fileInput.files[0];
+          const formData = new FormData();
+          formData.append('file', targetFile);
+          formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+          
+          const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`, {
+            method: 'POST',
+            body: formData
+          });
+          
+          const uploadData = await uploadResponse.json();
+          if (uploadData.error) {
+            throw new Error(uploadData.error.message);
+          }
+          pdfUrl = uploadData.secure_url; // 클라우디너리 링크 확보
+        }
 
         const payload = {
           title, grade, field, subject, topic, content, isAnonymous, 
@@ -529,13 +526,14 @@
         loadDocuments();
       } catch (e) {
         console.error("업로드 에러:", e);
-        alert("파일 업로드 중 오류가 발생했습니다. Upload Preset 권한을 확인해주세요.");
+        alert("오류가 발생했습니다. 전송 데이터 형식을 확인해 주세요.");
         document.getElementById('write-form').style.display = 'block';
       } finally {
         document.getElementById('loading-msg').style.display = 'none';
       }
     };
 
+    // 🚀 자동 다운로드 현상 완벽 조치 및 구글 뷰어를 통합한 안정적인 미리보기 구현
     window.openModal = async function(docId) {
       window.activeDocId = docId;
       document.getElementById('loading-msg').style.display = 'block';
@@ -560,8 +558,21 @@
         document.getElementById('modal-topic').innerText = item.topic;
         document.getElementById('modal-desc').innerText = item.content;
         
-        document.getElementById('modal-pdf-frame').src = item.pdfUrl;
-        document.getElementById('modal-download-btn').href = item.pdfUrl;
+        const pdfSection = document.getElementById('modal-pdf-section');
+        
+        // 🗂️ 첨부파일(pdfUrl)의 유무에 따른 모달 동적 레이아웃 제어
+        if (item.pdfUrl && item.pdfUrl.trim() !== "") {
+          pdfSection.style.display = "block";
+          
+          // Google Docs Viewer를 경유하여 강제 다운로드를 차단하고 인라인 렌더링 활성화
+          document.getElementById('modal-pdf-frame').src = `https://docs.google.com/gview?url=${encodeURIComponent(item.pdfUrl)}&embedded=true`;
+          document.getElementById('modal-download-btn').href = item.pdfUrl;
+        } else {
+          // 파일이 첨부되지 않은 글이라면 미리보기 영역을 완전 은닉
+          pdfSection.style.display = "none";
+          document.getElementById('modal-pdf-frame').src = "";
+        }
+        
         document.getElementById('modal-like-count').innerText = likesCount;
 
         const delBtn = document.getElementById('modal-delete-btn');
