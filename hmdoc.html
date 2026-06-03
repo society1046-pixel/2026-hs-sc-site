@@ -167,7 +167,7 @@
       <div id="display-author" class="author-badge"></div>
       
       <label class="checkbox-container">
-        <input type="checkbox" id="doc-anonymous"> 익명으로 게시하기
+        <input type="checkbox" id="doc-anonymous"> 익명으로 게시
       </label>
 
       <div class="input-row">
@@ -212,15 +212,15 @@
         </div>
       </div>
 
-      <label class="input-label" for="doc-pdf">PDF 보고서 파일 첨부(*반드시 PDF형식의 파일만 입력가능*)</label>
+      <label class="input-label" for="doc-pdf">PDF 보고서 파일 첨부 (*반드시 PDF형식의 파일로 업로드*)</label>
       <input type="file" id="doc-pdf" class="input-box" accept=".pdf">
 
-      <label class="input-label" for="doc-content">게시글 본문</label>
+      <label class="input-label" for="doc-content">게시글 내용</label>
       <textarea id="doc-content" class="input-box" placeholder="보고서에 대한 간단한 초록 또는 소개글을 적어주세요."></textarea>
       
       <div class="form-actions">
         <button class="btn-secondary" onclick="toggleWriteForm()">취소</button>
-        <button class="btn-primary" onclick="submitDocument()">게시하기</button>
+        <button class="btn-primary" id="btn-submit-form" onclick="submitDocument()">게시하기</button>
       </div>
     </div>
 
@@ -238,7 +238,7 @@
         <div class="notice-meta" id="modal-meta" style="border-bottom: 1px solid #EAF0F6; padding-bottom:12px;"></div>
         <div style="margin: 15px 0; font-size:14px; color:#4A5568; background:#FAFCFF; padding:15px; border-radius:8px; border:1px solid #EAF0F6;">
           <b style="color:#7BA4DB;">[탐구 주제]</b> <span id="modal-topic"></span><br>
-          <b style="color:#7BA4DB; margin-top:5px; display:inline-block;">[본문 내용]</b><br>
+          <b style="color:#7BA4DB; margin-top:5px; display:inline-block;">[내용]</b><br>
           <p id="modal-desc" style="margin:5px 0 0 0; white-space:pre-wrap; line-height:1.6;"></p>
         </div>
         
@@ -254,6 +254,7 @@
           <button class="btn-secondary" id="modal-like-btn" onclick="toggleLike()" style="border-radius:20px; padding:8px 20px;">
             ❤️ 좋아요 <span id="modal-like-count">0</span>
           </button>
+          <button class="btn-primary" id="modal-edit-btn" style="display:none; margin-left:10px; border-radius:20px; padding:8px 20px; background-color: #4FD1C5;">게시글 수정</button>
           <button class="btn-danger" id="modal-delete-btn" style="display:none; margin-left:10px; border-radius:20px; padding:8px 20px;">게시글 삭제</button>
         </div>
 
@@ -307,6 +308,8 @@
     window.currentPage = 1;
     const itemsPerPage = 10;
     window.activeDocId = null;
+    window.editingDocId = null; // 수정 모드 전환을 추적하기 위한 ID 변수
+    window.existingPdfUrl = ""; // 수정 시 기존 업로드된 PDF 백업 보관용 변수
 
     window.initPage = function() {
       if (window.currentRole === 0) {
@@ -342,7 +345,22 @@
 
     window.toggleWriteForm = function() {
       const form = document.getElementById('write-form');
-      form.style.display = (form.style.display === 'none' || form.style.display === '') ? 'block' : 'none';
+      if (form.style.display === 'block') {
+        form.style.display = 'none';
+        // 폼 닫을 때 수정 모드 데이터 완전 청소
+        window.editingDocId = null;
+        window.existingPdfUrl = "";
+        document.querySelector('.write-form-title').innerText = "연구 보고서 등록";
+        document.getElementById('btn-submit-form').innerText = "게시하기";
+        document.getElementById('doc-title').value = "";
+        document.getElementById('doc-subject').value = "";
+        document.getElementById('doc-topic').value = "";
+        document.getElementById('doc-content').value = "";
+        document.getElementById('doc-pdf').value = "";
+        document.getElementById('doc-anonymous').checked = false;
+      } else {
+        form.style.display = 'block';
+      }
     };
 
     window.changeCategory = function(catName) {
@@ -440,7 +458,7 @@
         listContainer.innerHTML = `<div class="notice-card" style="text-align:center; color:#A0AEC0; padding:40px 20px;">등록된 게시글이 없습니다.</div>`;
       }
       renderPagination(totalPages);
-    }
+    };
 
     function renderPagination(totalPages) {
       const nav = document.getElementById('pagination-nav');
@@ -477,12 +495,23 @@
         alert("모든 빈칸 정보를 성실히 입력해 주세요."); return;
       }
 
+      // 🚀 [강력 검증 로직 추가]: 오직 확장자가 .pdf 인 파일만 등록 가능하도록 차단
+      if (fileInput.files.length > 0) {
+        const fileName = fileInput.files[0].name.toLowerCase();
+        if (!fileName.endsWith('.pdf')) {
+          alert("올바르지 않은 파일 형식입니다. 학술 보고서는 오직 PDF 형식만 첨부할 수 있습니다.");
+          fileInput.value = ""; 
+          return;
+        }
+      }
+
       document.getElementById('loading-msg').style.display = 'block';
       document.getElementById('write-form').style.display = 'none';
 
       try {
-        let pdfUrl = ""; 
+        let pdfUrl = window.editingDocId ? window.existingPdfUrl : ""; 
 
+        // 새 파일이 등록된 경우에만 Cloudinary 업로드 트래픽 실행
         if (fileInput.files.length > 0) {
           const targetFile = fileInput.files[0];
           const formData = new FormData();
@@ -501,28 +530,44 @@
           pdfUrl = uploadData.secure_url;
         }
 
-        const payload = {
-          title, grade, field, subject, topic, content, isAnonymous, 
-          pdfUrl: pdfUrl, 
-          author: window.userName,
-          uid: window.userId,
-          createdAt: Date.now(),
-          likes: {},
-          comments: []
-        };
-
-        await addDoc(collection(db, "hmdocs"), payload);
-        alert("게시물이 성공적으로 등록되었습니다!");
+        if (window.editingDocId) {
+          // 🚀 [수정 로직]: 기존 데이터 보존 상태에서 내용 필드만 선별적으로 업데이트 진행
+          const docRef = doc(db, "hmdocs", window.editingDocId);
+          await updateDoc(docRef, {
+            title, grade, field, subject, topic, content, isAnonymous, pdfUrl
+          });
+          alert("게시물이 성공적으로 수정되었습니다!");
+        } else {
+          // [새 글 등록 로직]: 최초 데이터 구조 바인딩 생성
+          const payload = {
+            title, grade, field, subject, topic, content, isAnonymous, 
+            pdfUrl: pdfUrl, 
+            author: window.userName,
+            uid: window.userId,
+            createdAt: Date.now(),
+            likes: {},
+            comments: []
+          };
+          await addDoc(collection(db, "hmdocs"), payload);
+          alert("게시물이 성공적으로 등록되었습니다!");
+        }
+        
+        // 데이터 입력 완료 후 인터페이스 폼 리셋 작업
+        window.editingDocId = null;
+        window.existingPdfUrl = "";
+        document.querySelector('.write-form-title').innerText = "연구 보고서 등록";
+        document.getElementById('btn-submit-form').innerText = "게시하기";
         
         document.getElementById('doc-title').value = "";
         document.getElementById('doc-subject').value = "";
         document.getElementById('doc-topic').value = "";
         document.getElementById('doc-content').value = "";
         fileInput.value = "";
+        document.getElementById('doc-anonymous').checked = false;
         
         loadDocuments();
       } catch (e) {
-        console.error("업로드 에러:", e);
+        console.error("데이터 저장/업로드 에러:", e);
         alert("오류가 발생했습니다. 전송 데이터 형식을 확인해 주세요.");
         document.getElementById('write-form').style.display = 'block';
       } finally {
@@ -530,7 +575,6 @@
       }
     };
 
-    // 🚀 데이터베이스에 오염된 URL이 있다면 자동으로 필터링 및 복구
     window.openModal = async function(docId) {
       window.activeDocId = docId;
       document.getElementById('loading-msg').style.display = 'block';
@@ -560,14 +604,15 @@
         if (item.pdfUrl && item.pdfUrl.trim() !== "") {
           pdfSection.style.display = "block";
           
-          // 💡 이전 버그 수정 과정에서 데이터베이스에 잘못 입력되었을 수 있는 'fl_attachment' 글자를 자동 삭제합니다.
-          // Cloudinary에서 요구하는 가장 순수하고 안전한 형태의 원본 링크(secure_url)로 복구합니다.
           let safeUrl = item.pdfUrl;
           if (safeUrl.includes('/upload/fl_attachment/')) {
             safeUrl = safeUrl.replace('/upload/fl_attachment/', '/upload/');
           }
 
-          document.getElementById('modal-pdf-frame').src = safeUrl;
+          // 🚀 [네이버 앱 자동 다운로드 및 구글 첫페이지만 보이는 버그 완벽 수정]
+          // 모바일 인앱 브라우저의 프레임 한계를 차단하기 위해 Google의 임베디드 오피셜 PDF 전송 뷰어 엔진 구조로 바인딩합니다.
+          // 이 조치를 통해 자동 강제 다운로드를 우회 및 무력화시키고 모바일에서도 전체 멀티 페이지를 깔끔히 읽어옵니다.
+          document.getElementById('modal-pdf-frame').src = "https://docs.google.com/viewer?url=" + encodeURIComponent(safeUrl) + "&embedded=true";
           
           const downloadBtn = document.getElementById('modal-download-btn');
           downloadBtn.href = safeUrl; 
@@ -582,11 +627,18 @@
         document.getElementById('modal-like-count').innerText = likesCount;
 
         const delBtn = document.getElementById('modal-delete-btn');
+        const editBtn = document.getElementById('modal-edit-btn');
+        
+        // 🚀 [권한 제어 확인 기능]: 본인 글이거나 최고관리자(46) 등급인 경우에만 수정/삭제 권한 부여 및 버튼 활성화
         if (item.uid === window.userId || window.currentRole === 46) {
           delBtn.style.display = "inline-block";
           delBtn.onclick = () => deleteDocument(docId);
+          
+          editBtn.style.display = "inline-block";
+          editBtn.onclick = () => startEditDocument(item, docId);
         } else {
           delBtn.style.display = "none";
+          editBtn.style.display = "none";
         }
 
         renderComments(item.comments || []);
@@ -596,6 +648,30 @@
       } finally {
         document.getElementById('loading-msg').style.display = 'none';
       }
+    };
+
+    // 🚀 [수정 모드 진입 컨트롤러]: 기존에 작성했던 텍스트 정보를 폼 버퍼 배열로 마이그레이션 이관
+    window.startEditDocument = function(item, docId) {
+      window.editingDocId = docId;
+      window.existingPdfUrl = item.pdfUrl || "";
+      closeModal(); // 모달 세션 창 오프라인 종료
+      
+      // 폼 타이틀 및 트리거 버튼 텍스트 수정 인터페이스로 동적 전환
+      document.querySelector('.write-form-title').innerText = "연구 보고서 수정 (기존 작성 글)";
+      document.getElementById('btn-submit-form').innerText = "수정 완료하기";
+      
+      // 기존에 채워져 있던 DB 데이터 필드를 입력 박스 엘리먼트에 역방향 바인딩 주입
+      document.getElementById('doc-title').value = item.title || "";
+      document.getElementById('doc-grade').value = item.grade || "1학년";
+      document.getElementById('doc-field').value = item.field || "물리-지구과학";
+      document.getElementById('doc-subject').value = item.subject || "";
+      document.getElementById('doc-topic').value = item.topic || "";
+      document.getElementById('doc-content').value = item.content || "";
+      document.getElementById('doc-anonymous').checked = item.isAnonymous || false;
+      
+      // 작성 컴포넌트 최상단 노출 및 부드러운 스크롤 포커스 이동
+      document.getElementById('write-form').style.display = 'block';
+      document.getElementById('write-form').scrollIntoView({ behavior: 'smooth' });
     };
 
     window.closeModal = function() {
