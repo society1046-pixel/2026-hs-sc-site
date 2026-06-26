@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>방송 송출 정보 시스템</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', sans-serif;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 배경 학교 인포그래픽 디자인 요소 */
+        .bg-icon {
+            position: absolute;
+            color: #e2e8f0;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .icon-1 { font-size: 150px; top: -20px; left: -20px; transform: rotate(-15deg); }
+        .icon-2 { font-size: 120px; bottom: 20px; right: 20px; transform: rotate(10deg); }
+        .icon-3 { font-size: 80px; top: 10%; right: 15%; opacity: 0.5; }
+        .icon-4 { font-size: 60px; bottom: 15%; left: 10%; opacity: 0.5; }
+
+        /* 메인 컨텐츠 박스 */
+        .main-card {
+            position: relative;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 45px 60px; 
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+            border: 2px solid #1e3a8a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 850px;
+            text-align: center;
+        }
+
+        /* 1. 로고 영역 (크기 축소) */
+        .logo-box {
+            width: 100%;
+            max-width: 320px; /* 기존 480px에서 320px로 크기를 줄임 */
+            aspect-ratio: 1389 / 319;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .logo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* 학교 느낌 아이콘 데코 */
+        .school-deco {
+            margin-bottom: 15px;
+            color: #1e3a8a;
+            font-size: 1.3rem;
+            display: flex;
+            gap: 15px;
+        }
+
+        /* 2. 주제 입력 */
+        .topic-box {
+            width: 100%;
+            margin-bottom: 35px; 
+        }
+        .topic-input {
+            width: 100%;
+            border: none;
+            border-bottom: 4px solid #1e3a8a;
+            background: #f1f5f9;
+            padding: 15px;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #1e3a8a;
+            text-align: center;
+            outline: none;
+            border-radius: 10px 10px 0 0;
+        }
+        .topic-input::placeholder {
+            color: #94a3b8;
+        }
+
+        /* 3. 시간 영역 */
+        .clock-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .current-time-label {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .current-time-label i { color: #ef4444; }
+
+        .time-display {
+            font-size: 4.5rem;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: -2px;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .date-display {
+            margin-top: 10px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #475569;
+            background: #e2e8f0;
+            padding: 5px 20px;
+            border-radius: 50px;
+        }
+    </style>
+</head>
+<body>
+
+    <i class="fa-solid fa-graduation-cap bg-icon icon-1"></i>
+    <i class="fa-solid fa-book-open bg-icon icon-2"></i>
+    <i class="fa-solid fa-pencil bg-icon icon-3"></i>
+    <i class="fa-solid fa-microscope bg-icon icon-4"></i>
+
+    <div class="main-card">
+        <div class="logo-box">
+            <img src="https://drive.google.com/thumbnail?sz=w1389&id=1GUq6wloQ_dWNza9e8aYeXT8rI3VBhUO4" alt="학교 로고" onerror="this.src='https://via.placeholder.com/320x73?text=SCHOOL+LOGO'">
+        </div>
+
+        <div class="school-deco">
+            <i class="fa-solid fa-school"></i>
+            <i class="fa-solid fa-chalkboard-user"></i>
+            <i class="fa-solid fa-palette"></i>
+        </div>
+
+        <div class="topic-box">
+            <input type="text" class="topic-input" placeholder="주제를 입력하세요." aria-label="방송 주제">
+        </div>
+
+        <div class="clock-container">
+            <div class="current-time-label">
+                <i class="fa-solid fa-clock"></i> 현재시간
+            </div>
+            <div id="current-time" class="time-display">00:00:00</div>
+            <div id="current-date" class="date-display">0000.00.00 (일)</div>
+        </div>
+    </div>
+
+    <script>
+        function startClock() {
+            const timeElement = document.getElementById('current-time');
+            const dateElement = document.getElementById('current-date');
+            
+            function update() {
+                const now = new Date();
+                
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const date = String(now.getDate()).padStart(2, '0');
+                const dayList = ['일', '월', '화', '수', '목', '금', '토'];
+                const day = dayList[now.getDay()];
+                
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                
+                timeElement.innerText = `${hours}:${minutes}:${seconds}`;
+                dateElement.innerText = `${year}.${month}.${date} (${day})`;
+            }
+            
+            setInterval(update, 1000);
+            update();
+        }
+        
+        startClock();
+    </script>
+</body>
+</html>
